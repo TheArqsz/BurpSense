@@ -346,7 +346,7 @@
     "ws": "^8.19.0"
   },
   "devDependencies": {
-    "@types/node": "^25.0.3",
+    "@types/node": "^25.0.8",
     "@types/node-fetch": "^2.6.13",
     "@types/vscode": "^1.107.0",
     "@types/ws": "^8.18.1"
