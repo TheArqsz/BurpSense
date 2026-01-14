@@ -1,0 +1,15 @@
+target/
+build/
+**/node_modules/
+out/
+*.jar
+*.vsix
+
+.vscode/
+.DS_Store
+.classpath
+.project
+.settings/
+
+.burpsense/
+*.log

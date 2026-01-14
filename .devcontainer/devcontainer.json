@@ -1,0 +1,22 @@
+{
+    "name": "BurpSense Dev (Java + Node)",
+    "image": "mcr.microsoft.com/devcontainers/java:21",
+    "runArgs": [
+        "--add-host=host.docker.internal:host-gateway"
+    ],
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {},
+        "ghcr.io/devcontainers/features/java:1": {
+            "installMaven": "true"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "vscjava.vscode-java-pack",
+                "dbaeumer.vscode-eslint"
+            ]
+        }
+    },
+    "remoteUser": "vscode"
+}

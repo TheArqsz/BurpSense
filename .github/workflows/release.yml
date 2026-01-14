@@ -1,0 +1,177 @@
+name: Build and Publish Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  release-and-publish:
+    name: Release and Publish
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+          cache: 'npm'
+          cache-dependency-path: vscode-extension/package-lock.json
+
+      - name: Generate Changelog
+        id: changelog
+        uses: TriPSs/conventional-changelog-action@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          output-file: "CHANGELOG.md"
+          tag-prefix: "v"
+          release-count: 0
+          preset: conventionalcommits
+          skip-commit: true
+          git-push: false
+
+      - name: Bump Versions
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        run: |
+          VERSION="${{ steps.changelog.outputs.version }}"
+          echo "Bumping versions to $VERSION"
+          
+          cd burp-bridge
+          mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
+          cd ..
+          
+          cd vscode-extension
+          jq --arg version "$VERSION" '.version = $version' package.json > package.json.tmp
+          mv package.json.tmp package.json
+          
+          jq --arg version "$VERSION" '.version = $version' package-lock.json > package-lock.json.tmp
+          mv package-lock.json.tmp package-lock.json
+          cd ..
+
+      - name: Compile TypeScript
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        run: |
+          cd vscode-extension
+          npm install typescript
+          npm run compile
+          
+      - name: Verify Compilation Output
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        run: |
+          if [ ! -f "vscode-extension/out/extension.js" ]; then
+            echo "Error: extension.js not found after compilation"
+            exit 1
+          fi
+
+      - name: Install vsce
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        run: npm install -g @vscode/vsce
+
+      - name: Build VS Code Extension VSIX
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        run: |
+          cd vscode-extension
+          vsce package --no-dependencies
+          
+      - name: Verify VSIX Build
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        run: |
+          VSIX_FILE=$(find vscode-extension -name "burpsense-*.vsix" -type f | head -n 1)
+          if [ -z "$VSIX_FILE" ]; then
+            echo "Error: VSIX file not found after packaging"
+            exit 1
+          fi
+
+      - name: Build Burp Bridge JAR
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        run: |
+          cd burp-bridge
+          mvn clean package -DskipTests -B
+
+      - name: Verify JAR Build
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        run: |
+          JAR_FILE=$(find burp-bridge/target -name "burpsense-bridge-*.jar" -type f | head -n 1)
+          if [ -z "$JAR_FILE" ]; then
+            echo "Error: JAR file not found after Maven build"
+            exit 1
+          fi
+
+      - name: Prepare Release Artifacts
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        run: |
+          VERSION="${{ steps.changelog.outputs.version }}"
+
+          cp burp-bridge/target/burpsense-bridge-$VERSION.jar \
+             burp-bridge/target/burpsense-bridge.jar
+          
+          cp vscode-extension/burpsense-$VERSION.vsix \
+             vscode-extension/burpsense.vsix
+
+      - name: Commit Version Bump
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add burp-bridge/pom.xml vscode-extension/package.json vscode-extension/package-lock.json CHANGELOG.md
+          git commit -m "chore(release): bump version to ${{ steps.changelog.outputs.version }}"
+          git push
+
+      - name: Create GitHub Release
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            burp-bridge/target/burpsense-bridge-${{ steps.changelog.outputs.version }}.jar
+            burp-bridge/target/burpsense-bridge.jar
+            vscode-extension/burpsense-${{ steps.changelog.outputs.version }}.vsix
+            vscode-extension/burpsense.vsix
+          draft: false
+          tag_name: ${{ steps.changelog.outputs.tag }}
+          name: ${{ steps.changelog.outputs.tag }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          make_latest: true
+          body: |
+            ## Changelog 
+
+            ${{ steps.changelog.outputs.clean_changelog }}
+            
+            ## Installation
+            
+            ### Burp Suite Extension
+
+            1. Download `burpsense-bridge.jar` from the assets below
+            2. In Burp Suite, go to Extensions → Add
+            3. Select the downloaded JAR file
+            
+            ### VS Code Extension
+
+            1. Download `burpsense.vsix` from the assets below
+            2. In VS Code, open Extensions view (Ctrl+Shift+X)
+            3. Click "..." menu → "Install from VSIX"
+            4. Select the downloaded file
+            
+            ## Quick Start
+
+            1. Load the Burp Bridge extension in Burp Suite
+            2. Start the bridge server in Burp's "BurpSense Bridge Settings" tab
+            3. Generate an API key and copy the token
+            4. In VS Code, run "BurpSense: Set API Token" and paste the token
+            5. Start mapping issues to your code!

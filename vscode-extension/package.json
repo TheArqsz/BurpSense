@@ -1,0 +1,354 @@
+{
+  "name": "burpsense",
+  "displayName": "BurpSense",
+  "description": "Integrate Burp Suite security findings directly into VS Code",
+  "version": "0.1.0",
+  "publisher": "arqsz",
+  "engines": {
+    "vscode": "^1.107.1"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "BurpSense",
+      "properties": {
+        "burpsense.bridgeIp": {
+          "type": "string",
+          "default": "127.0.0.1",
+          "description": "The IP address where the BurpSense Bridge is listening."
+        },
+        "burpsense.bridgePort": {
+          "type": "integer",
+          "default": 1337,
+          "description": "The port number where the BurpSense Bridge is listening."
+        },
+        "burpsense.inScopeOnly": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show only issues that are within Burp's defined suite scope."
+        },
+        "burpsense.minSeverity": {
+          "type": "string",
+          "enum": [
+            "HIGH",
+            "MEDIUM",
+            "LOW",
+            "INFORMATION"
+          ],
+          "default": "INFORMATION",
+          "description": "Filter issues by minimum severity."
+        },
+        "burpsense.minConfidence": {
+          "type": "string",
+          "enum": [
+            "CERTAIN",
+            "FIRM",
+            "TENTATIVE"
+          ],
+          "default": "TENTATIVE",
+          "description": "Filter issues by minimum confidence."
+        },
+        "burpsense.showDriftNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show notifications when mappings are automatically adjusted to track code changes."
+        },
+        "burpsense.confirmMappingDeletion": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show confirmation dialog before removing mappings."
+        },
+        "burpsense.autoCleanOrphanedMappings": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically remove mappings when their associated files are deleted."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "burpsense.setToken",
+        "title": "BurpSense: Set API Token"
+      },
+      {
+        "command": "burpsense.connect",
+        "title": "BurpSense: Connect to Bridge"
+      },
+      {
+        "command": "burpsense.disconnect",
+        "title": "BurpSense: Disconnect from Bridge"
+      },
+      {
+        "command": "burpsense.checkConnection",
+        "title": "BurpSense: Check Connection"
+      },
+      {
+        "command": "burpsense.retryConnection",
+        "title": "BurpSense: Retry Connection"
+      },
+      {
+        "command": "burpsense.showLogs",
+        "title": "BurpSense: Show Logs"
+      },
+      {
+        "command": "burpsense.statusMenu",
+        "title": "BurpSense: Quick Actions"
+      },
+      {
+        "command": "burpsense.mapIssueToFile",
+        "title": "BurpSense: Map Burp Issue to this Line"
+      },
+      {
+        "command": "burpsense.toggleScopeOn",
+        "title": "BurpSense: Show All Issues",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "burpsense.toggleScopeOff",
+        "title": "BurpSense: Show In-Scope Only",
+        "icon": "$(target)"
+      },
+      {
+        "command": "burpsense.openDiagnosticAdvisory",
+        "title": "BurpSense: View Advisory Details"
+      },
+      {
+        "command": "burpsense.refreshIssues",
+        "title": "BurpSense: Refresh Issues",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "burpsense.removeMapping",
+        "title": "BurpSense: Remove Mapping from this Line",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "burpsense.removeMappingFromTree",
+        "title": "BurpSense: Remove related Mappings",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "burpsense.bulkRemoveMappings",
+        "title": "BurpSense: Remove multiple Mappings...",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "burpsense.selectMinSeverity",
+        "title": "BurpSense: Set minimum severity",
+        "icon": "$(filter-filled)"
+      },
+      {
+        "command": "burpsense.selectMinConfidence",
+        "title": "BurpSense: Set minimum confidence",
+        "icon": "$(filter-filled)"
+      },
+      {
+        "command": "burpsense.filterPreview",
+        "title": "BurpSense: Quick Filter Preset...",
+        "icon": "$(list-filter)"
+      },
+      {
+        "command": "burpsense.searchIssues",
+        "title": "BurpSense: Search Issues",
+        "icon": "$(search)"
+      },
+      {
+        "command": "burpsense.clearSearchFilter",
+        "title": "BurpSense: Clear Search Filter",
+        "icon": "$(close)"
+      },
+      {
+        "command": "burpsense.exportMappings",
+        "title": "BurpSense: Export Mappings..."
+      },
+      {
+        "command": "burpsense.importMappings",
+        "title": "BurpSense: Import Mappings..."
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "burpsense.searchIssues",
+          "when": "view == burpsense.issuesView",
+          "group": "navigation@0"
+        },
+        {
+          "command": "burpsense.clearSearchFilter",
+          "when": "view == burpsense.issuesView && burpsense.hasFilter",
+          "group": "navigation@1"
+        },
+        {
+          "command": "burpsense.filterPreview",
+          "when": "view == burpsense.issuesView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "burpsense.refreshIssues",
+          "when": "view == burpsense.issuesView",
+          "group": "navigation@3"
+        },
+        {
+          "command": "burpsense.toggleScopeOn",
+          "when": "view == burpsense.issuesView && burpsense.inScopeOnly",
+          "group": "navigation@4"
+        },
+        {
+          "command": "burpsense.toggleScopeOff",
+          "when": "view == burpsense.issuesView && !burpsense.inScopeOnly",
+          "group": "navigation@4"
+        },
+        {
+          "command": "burpsense.selectMinConfidence",
+          "when": "view == burpsense.issuesView",
+          "group": "navigation@5"
+        },
+        {
+          "command": "burpsense.selectMinSeverity",
+          "when": "view == burpsense.issuesView",
+          "group": "navigation@6"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "burpsense.removeMappingFromTree",
+          "when": "viewItem =~ /hasMappings/",
+          "group": "inline"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "burpsense.mapIssueToFile",
+          "group": "burpsense@1",
+          "when": "editorTextFocus"
+        },
+        {
+          "command": "burpsense.removeMapping",
+          "group": "burpsense@2",
+          "when": "editorTextFocus"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "burpsense.openDiagnosticAdvisory",
+          "when": "false"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "burpsense-explorer",
+          "title": "BurpSense",
+          "icon": "$(shield)"
+        }
+      ]
+    },
+    "views": {
+      "burpsense-explorer": [
+        {
+          "id": "burpsense.issuesView",
+          "name": "Live Burp Issues"
+        }
+      ]
+    },
+    "walkthroughs": [
+      {
+        "id": "burpsense.setup",
+        "title": "Get Started with BurpSense",
+        "description": "Connect VS Code to Burp Suite in 4 easy steps",
+        "steps": [
+          {
+            "id": "loadExtension",
+            "title": "Load BurpSense Bridge in Burp Suite",
+            "description": "Open Burp Suite, go to the Extensions tab, and load the BurpSense Bridge JAR file.\n\nThe bridge enables communication between Burp Suite and VS Code.",
+            "media": {
+              "markdown": "docs/walkthrough/step1.md"
+            }
+          },
+          {
+            "id": "startServer",
+            "title": "Start the Bridge Server",
+            "description": "In Burp Suite, navigate to the 'Bridge Settings' tab and click the 'Start Server' button.\n\nThe server will listen on 127.0.0.1:1337 by default.",
+            "media": {
+              "markdown": "docs/walkthrough/step2.md"
+            }
+          },
+          {
+            "id": "setToken",
+            "title": "Generate and Set API Token",
+            "description": "In the BurpSense Bridge Settings tab, click 'Generate New Key' and copy the token.\n\nThen set it in VS Code using the button below.\n[Set API Token](command:burpsense.setToken)",
+            "media": {
+              "markdown": "docs/walkthrough/step3.md"
+            }
+          },
+          {
+            "id": "verify",
+            "title": "Verify Connection",
+            "description": "Check the status bar at the bottom of VS Code. You should see 'BurpSense: Connected' with an issue count.\n\nIf not, click the status bar item for troubleshooting options.\n[Check Connection](command:burpsense.checkConnection)",
+            "media": {
+              "markdown": "docs/walkthrough/step4.md"
+            }
+          },
+          {
+            "id": "mapIssue",
+            "title": "Map Your First Issue",
+            "description": "Right-click on a line of code and select 'BurpSense: Map Burp Issue to this Line'.\n\nThe issue will appear in the Problems panel and you can view full details.",
+            "media": {
+              "markdown": "docs/walkthrough/step5.md"
+            }
+          },
+          {
+            "id": "browseIssues",
+            "title": "Browse and Filter Issues",
+            "description": "Use the BurpSense view to browse all issues, search by name or URL, and apply filters.\n\nClick any issue to view full details.",
+            "media": {
+              "markdown": "docs/walkthrough/step6.md"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "npx tsc -p ./",
+    "watch": "npx tsc -watch -p ./",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "arqsz",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheArqsz/burpsense.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TheArqsz/burpsense/issues"
+  },
+  "keywords": [
+    "burp",
+    "burp suite",
+    "security",
+    "vulnerability",
+    "penetration testing",
+    "security testing",
+    "code analysis",
+    "web security"
+  ],
+  "dependencies": {
+    "node-fetch": "^2.7.0",
+    "typescript": "^5.9.3",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "@types/node-fetch": "^2.6.13",
+    "@types/vscode": "^1.107.0",
+    "@types/ws": "^8.18.1"
+  }
+}
