@@ -8,13 +8,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Token bucket rate limiter for preventing brute force attacks
+ * Fixed window rate limiter for preventing brute force attacks
  */
 public class RateLimiter {
 
-    private final Map<String, TokenBucket> buckets = new ConcurrentHashMap<>();
+    private final Map<String, FixedWindow> windows = new ConcurrentHashMap<>();
     private final int maxRequests;
-    private final long windowSeconds;
+    private final long windowMillis;
     private final ScheduledExecutorService cleanupExecutor;
 
     /**
@@ -23,9 +23,9 @@ public class RateLimiter {
      * @param maxRequests   Maximum requests allowed per window
      * @param windowSeconds Time window in seconds
      */
-    public RateLimiter(int maxRequests, long windowSeconds) {
+    public RateLimiter(int maxRequests, long windowMillis) {
         this.maxRequests = maxRequests;
-        this.windowSeconds = windowSeconds;
+        this.windowMillis = TimeUnit.SECONDS.toMillis(windowMillis);
 
         this.cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
         this.cleanupExecutor.scheduleAtFixedRate(
@@ -40,9 +40,9 @@ public class RateLimiter {
      * @return true if request is allowed, false if rate limit exceeded
      */
     public boolean allowRequest(String identifier) {
-        TokenBucket bucket = buckets.computeIfAbsent(
+        FixedWindow bucket = windows.computeIfAbsent(
                 identifier,
-                k -> new TokenBucket(maxRequests, windowSeconds));
+                k -> new FixedWindow(maxRequests, windowMillis));
         return bucket.tryConsume();
     }
 
@@ -53,8 +53,8 @@ public class RateLimiter {
      * @return Number of remaining requests in current window
      */
     public int getRemainingRequests(String identifier) {
-        TokenBucket bucket = buckets.get(identifier);
-        return bucket == null ? maxRequests : bucket.getAvailableTokens();
+        FixedWindow window = windows.get(identifier);
+        return window == null ? maxRequests : window.getAvailableTokens();
     }
 
     /**
@@ -64,16 +64,16 @@ public class RateLimiter {
      * @return Seconds until reset, or 0 if not rate limited
      */
     public long getResetTime(String identifier) {
-        TokenBucket bucket = buckets.get(identifier);
-        return bucket == null ? 0 : bucket.getSecondsUntilReset();
+        FixedWindow window = windows.get(identifier);
+        return window == null ? 0 : window.getSecondsUntilReset();
     }
 
     /**
-     * Removes buckets that haven't been used in over 1 hour
+     * Removes windows that haven't been used in over 1 hour
      */
     private void cleanup() {
-        long cutoff = Instant.now().getEpochSecond() - 3600;
-        buckets.entrySet().removeIf(entry -> entry.getValue().getLastAccessTime() < cutoff);
+        long cutoff = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1);
+        windows.entrySet().removeIf(entry -> entry.getValue().getLastAccessTime() < cutoff);
     }
 
     /**
@@ -86,16 +86,16 @@ public class RateLimiter {
     /**
      * Token bucket for rate limiting
      */
-    private static class TokenBucket {
+    private static class FixedWindow {
         private final int capacity;
-        private final long windowSeconds;
+        private final long windowMillis;
         private int tokens;
         private long lastRefillTime;
         private long lastAccessTime;
 
-        public TokenBucket(int capacity, long windowSeconds) {
+        public FixedWindow(int capacity, long windowMillis) {
             this.capacity = capacity;
-            this.windowSeconds = windowSeconds;
+            this.windowMillis = windowMillis;
             this.tokens = capacity;
             this.lastRefillTime = Instant.now().getEpochSecond();
             this.lastAccessTime = lastRefillTime;
@@ -103,7 +103,7 @@ public class RateLimiter {
 
         public synchronized boolean tryConsume() {
             refill();
-            lastAccessTime = Instant.now().getEpochSecond();
+            lastAccessTime = System.currentTimeMillis();
 
             if (tokens > 0) {
                 tokens--;
@@ -120,7 +120,7 @@ public class RateLimiter {
         public synchronized long getSecondsUntilReset() {
             long now = Instant.now().getEpochSecond();
             long elapsed = now - lastRefillTime;
-            return Math.max(0, windowSeconds - elapsed);
+            return Math.max(0, (windowMillis - elapsed) / 1000);
         }
 
         public long getLastAccessTime() {
@@ -128,10 +128,10 @@ public class RateLimiter {
         }
 
         private void refill() {
-            long now = Instant.now().getEpochSecond();
+            long now = System.currentTimeMillis();
             long elapsed = now - lastRefillTime;
 
-            if (elapsed >= windowSeconds) {
+            if (elapsed >= windowMillis) {
                 tokens = capacity;
                 lastRefillTime = now;
             }
