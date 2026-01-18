@@ -50,7 +50,7 @@ Generate an API token using the "Generate New Key" button and copy it somewhere 
 
 ### VS Code extension
 
-You can install from a packaged VSIX or run from source:
+You can install from [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=arqsz.burpsense), [Open VSX Registry](https://open-vsx.org/extension/arqsz/burpsense), a packaged VSIX or run from source:
 
 **From VSIX:**
 
