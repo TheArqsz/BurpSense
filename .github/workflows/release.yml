@@ -175,3 +175,19 @@ jobs:
             3. Generate an API key and copy the token
             4. In VS Code, run "BurpSense: Set API Token" and paste the token
             5. Start mapping issues to your code!
+
+      - name: Publish to Open VSX Registry
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        uses: HaaLeo/publish-vscode-extension@v2
+        id: publishToOpenVSX
+        with:
+          pat: ${{ secrets.OPEN_VSX_TOKEN }}
+          baseImagesUrl: "https://github.com/TheArqsz/BurpSense"
+      - name: Publish to Visual Studio Marketplace
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        uses: HaaLeo/publish-vscode-extension@v2
+        with:
+          pat: ${{ secrets.VS_MARKETPLACE_TOKEN }}
+          registryUrl: https://marketplace.visualstudio.com
+          extensionFile: ${{ steps.publishToOpenVSX.outputs.vsixPath }}
+          baseImagesUrl: "https://github.com/TheArqsz/BurpSense"
