@@ -79,7 +79,7 @@ export class FilterCommands {
         const presets: FilterPreset[] = [
             {
                 label: '$(shield) All Issues',
-                detail: `Would show all ${allIssues.length} issues`,
+                detail: `Would show all available issues`,
                 filters: { severity: SEVERITY_LEVELS[SEVERITY_LEVELS.length - 1], confidence: CONFIDENCE_LEVELS[CONFIDENCE_LEVELS.length - 1], inScope: false }
             },
             {

@@ -25,6 +25,28 @@ export class ConnectionManager {
     private circuitBreakerOpen: boolean = false;
     private lastFailureTime?: number;
 
+    /**
+     * Debounce timer for status updates
+     * Prevents rapid flickering by waiting for final state
+     */
+    private statusDebounceTimer?: NodeJS.Timeout;
+
+    /**
+     * Pending status update
+     * Stores the most recent status change to apply after debounce
+     */
+    private pendingStatus?: {
+        connected: boolean;
+        issueCount: number;
+        timestamp: number;
+    };
+
+    /**
+     * Lock for status update operations
+     * Ensures sequential processing of status changes
+     */
+    private statusUpdateLock: Promise<void> = Promise.resolve();
+
     private readonly eventEmitter: ConnectionEventEmitter;
 
     constructor(private context: vscode.ExtensionContext) {
@@ -44,6 +66,101 @@ export class ConnectionManager {
      */
     public get events(): vscode.Event<AnyConnectionEvent> {
         return this.eventEmitter.onEvent;
+    }
+
+    /**
+     * Schedules a debounced status update
+     * 
+     * Collects rapid status changes within a 100ms window and applies
+     * only the final state.
+     * 
+     * @param connected - Target connection state
+     */
+    private scheduleStatusUpdate(connected: boolean): void {
+        if (this.statusDebounceTimer) {
+            clearTimeout(this.statusDebounceTimer);
+        }
+
+        this.pendingStatus = {
+            connected: connected,
+            issueCount: this._issueCount,
+            timestamp: Date.now()
+        };
+
+        this.statusDebounceTimer = setTimeout(() => {
+            this.applyStatusUpdate();
+        }, 100);
+    }
+
+    /**
+     * Applies the pending status update with mutex lock
+     * 
+     * Ensures only one status update executes at a time, preventing
+     * race conditions when multiple async operations complete simultaneously.
+     */
+    private async applyStatusUpdate(): Promise<void> {
+        if (!this.pendingStatus) {
+            return;
+        }
+
+        const currentLock = this.statusUpdateLock;
+        let releaseLock: () => void;
+        this.statusUpdateLock = new Promise<void>(resolve => {
+            releaseLock = resolve;
+        });
+
+        try {
+            await currentLock;
+
+            const { connected, issueCount } = this.pendingStatus;
+
+            this._isConnected = connected;
+            this._issueCount = issueCount;
+
+            await vscode.commands.executeCommand(
+                'setContext',
+                CONTEXT_KEYS.CONNECTED,
+                connected
+            );
+
+            if (connected) {
+                const statusText = STATUS_BAR.CONNECTED_FORMAT.replace(
+                    '%d',
+                    String(issueCount)
+                );
+                this.statusBarItem.text = statusText;
+                this.statusBarItem.tooltip = STATUS_BAR.TOOLTIP_FORMAT
+                    .replace('%s', this.buildApiUrl('', {}))
+                    .replace('%d', String(issueCount));
+                this.statusBarItem.backgroundColor = new vscode.ThemeColor(
+                    'statusBarItem.remoteBackground'
+                );
+            } else if (this._manuallyDisconnected) {
+                this.statusBarItem.text = STATUS_BAR.OFFLINE;
+                this.statusBarItem.tooltip = 'Manually disconnected. Click to reconnect.';
+                this.statusBarItem.backgroundColor = new vscode.ThemeColor(
+                    'statusBarItem.warningBackground'
+                );
+            } else {
+                this.statusBarItem.text = STATUS_BAR.DISCONNECTED;
+                this.statusBarItem.tooltip = STATUS_BAR.TOOLTIP_DISCONNECTED;
+                this.statusBarItem.backgroundColor = new vscode.ThemeColor(
+                    'statusBarItem.errorBackground'
+                );
+            }
+
+            this.statusBarItem.show();
+
+            this.pendingStatus = undefined;
+
+            Logger.info(
+                `Status applied: ${connected ? 'Connected' : 'Disconnected'} (${issueCount} issues)`,
+                'Status'
+            );
+
+        } finally {
+            releaseLock!();
+        }
     }
 
     /**
@@ -75,6 +192,12 @@ export class ConnectionManager {
      */
     public dispose(): void {
         this.stopPolling();
+
+        if (this.statusDebounceTimer) {
+            clearTimeout(this.statusDebounceTimer);
+            this.statusDebounceTimer = undefined;
+        }
+        this.pendingStatus = undefined;
 
         if (this.ws) {
             try {
@@ -181,7 +304,6 @@ export class ConnectionManager {
                     try {
                         const issues = await this.getAllIssues();
 
-                        this._issueCount = issues.length;
                         issues.forEach(i => this.knownIssueIds.add(i.id));
 
                         if (issues.length > 0) {
@@ -189,10 +311,10 @@ export class ConnectionManager {
                         }
                     } catch (error) {
                         Logger.error('Failed to fetch initial issues', error, 'Connection');
-                        this._issueCount = 0;
+                        this.updateIssueCount(0);
                     }
                 } else {
-                    this._issueCount = this.knownIssueIds.size;
+                    this.updateIssueCount(this.knownIssueIds.size);
                 }
 
                 this.updateStatus(true);
@@ -245,6 +367,8 @@ export class ConnectionManager {
 
         Logger.info('User initiated connection', 'Connection');
 
+        this.updateStatusImmediate(false);
+
         this.startPolling();
         this.checkConnection();
     }
@@ -261,7 +385,8 @@ export class ConnectionManager {
 
         this._manuallyDisconnected = true;
         this.stopPolling();
-        this.updateStatus(false);
+
+        this.updateStatusImmediate(false);
 
         this.eventEmitter.emitDisconnected('manual');
 
@@ -333,6 +458,8 @@ export class ConnectionManager {
                     );
                 }
 
+                this.updateIssueCount(this.knownIssueIds.size);
+
                 if (data.removedIds.length > 0) {
                     this.eventEmitter.emitIssuesRemoved(data.removedIds);
                 }
@@ -402,7 +529,9 @@ export class ConnectionManager {
                 const allIssues = data.newIssues;
                 this.knownIssueIds.clear();
                 allIssues.forEach(i => this.knownIssueIds.add(i.id));
-                this._issueCount = allIssues.length;
+
+                this.updateIssueCount(allIssues.length);
+
                 Logger.info(`Fetched all ${allIssues.length} issues (full refresh)`, 'Connection');
                 return allIssues;
             } else {
@@ -661,27 +790,57 @@ export class ConnectionManager {
      * @param connected - Current connection state
      */
     public updateStatus(connected: boolean): void {
-        this._isConnected = connected;
-        vscode.commands.executeCommand('setContext', CONTEXT_KEYS.CONNECTED, connected);
+        this.scheduleStatusUpdate(connected);
+    }
 
-        if (connected) {
-            const statusText = STATUS_BAR.CONNECTED_FORMAT.replace('%d', String(this._issueCount));
+    /**
+     * Immediately updates status without debouncing
+     * 
+     * Use only when immediate feedback is critical (e.g. user actions).
+     * For most cases, use updateStatus() which provides debouncing.
+     * 
+     * @param connected - Whether bridge is connected
+     */
+    public updateStatusImmediate(connected: boolean): void {
+        if (this.statusDebounceTimer) {
+            clearTimeout(this.statusDebounceTimer);
+            this.statusDebounceTimer = undefined;
+        }
+
+        this.pendingStatus = {
+            connected: connected,
+            issueCount: this._issueCount,
+            timestamp: Date.now()
+        };
+
+        this.applyStatusUpdate();
+    }
+
+    /**
+     * Updates the issue count and immediately refreshes status bar
+     * 
+     * Use this when issue count changes (after fetching/filtering).
+     * Bypasses debouncing to provide instant feedback for data changes.
+     * 
+     * @param count - New issue count to display
+     */
+    public updateIssueCount(count: number): void {
+        this._issueCount = count;
+
+        if (this._isConnected) {
+            if (this.statusDebounceTimer) {
+                clearTimeout(this.statusDebounceTimer);
+                this.statusDebounceTimer = undefined;
+            }
+
+            const statusText = STATUS_BAR.CONNECTED_FORMAT.replace('%d', String(count));
             this.statusBarItem.text = statusText;
             this.statusBarItem.tooltip = STATUS_BAR.TOOLTIP_FORMAT
                 .replace('%s', this.buildApiUrl('', {}))
-                .replace('%d', String(this._issueCount));
-            this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.remoteBackground');
-        } else if (this._manuallyDisconnected) {
-            this.statusBarItem.text = STATUS_BAR.OFFLINE;
-            this.statusBarItem.tooltip = 'Manually disconnected. Click to reconnect.';
-            this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
-        } else {
-            this.statusBarItem.text = STATUS_BAR.DISCONNECTED;
-            this.statusBarItem.tooltip = STATUS_BAR.TOOLTIP_DISCONNECTED;
-            this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
-        }
+                .replace('%d', String(count));
 
-        this.statusBarItem.show();
+            Logger.info(`Issue count updated: ${count}`, 'Status');
+        }
     }
 
     private handleConnectionError(error: any): void {
@@ -883,7 +1042,6 @@ export class ConnectionManager {
                 this.eventEmitter.emitIssuesReceived(issues, true);
             }
 
-            this._issueCount = this.knownIssueIds.size;
             this.updateStatus(true);
 
             if (this.onIssuesUpdated) {
