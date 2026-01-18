@@ -181,7 +181,7 @@ function registerEventHandlers(
     context.subscriptions.push(workspaceChangeHandler);
 
     let saveDebounceTimer: NodeJS.Timeout | undefined;
-    const documentSaveHandler = vscode.workspace.onDidSaveTextDocument((document) => {
+    const documentSaveHandler = vscode.workspace.onDidSaveTextDocument((_document) => {
         if (saveDebounceTimer) {
             clearTimeout(saveDebounceTimer);
         }
