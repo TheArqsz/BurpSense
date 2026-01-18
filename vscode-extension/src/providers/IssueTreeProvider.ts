@@ -371,7 +371,7 @@ export class IssueTreeProvider implements vscode.TreeDataProvider<IssueItem> {
                             this.cachedIssues = [];
                         }
                     } catch (error) {
-                        console.error('BurpSense: Failed to fetch issues:', error);
+                        Logger.error('BurpSense: Failed to fetch issues:', error);
                         return [IssueItem.createEmptyState(
                             "Fetch Failed",
                             `Error: ${error}`,
@@ -490,7 +490,7 @@ export class IssueTreeProvider implements vscode.TreeDataProvider<IssueItem> {
                 }
             }
         } catch (error) {
-            console.error('BurpSense: Failed to restore expansion state:', error);
+            Logger.error('BurpSense: Failed to restore expansion state:', error);
         }
     }
 

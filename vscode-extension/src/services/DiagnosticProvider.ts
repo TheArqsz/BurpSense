@@ -77,7 +77,7 @@ export class DiagnosticProvider {
                 this.diagnosticCollection.set(vscode.Uri.parse(uriStr), diags);
             });
         } catch (error) {
-            console.error('BurpSense: Failed to refresh diagnostics', error);
+            Logger.error('BurpSense: Failed to refresh diagnostics', error);
             vscode.window.showErrorMessage(`BurpSense: Failed to refresh diagnostics - ${error}`);
         }
     }
