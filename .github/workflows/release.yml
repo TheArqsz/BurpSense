@@ -183,6 +183,7 @@ jobs:
         with:
           pat: ${{ secrets.OPEN_VSX_TOKEN }}
           baseImagesUrl: "https://github.com/TheArqsz/BurpSense"
+          packagePath: "./vscode-extension"
       - name: Publish to Visual Studio Marketplace
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         uses: HaaLeo/publish-vscode-extension@v2
@@ -191,3 +192,4 @@ jobs:
           registryUrl: https://marketplace.visualstudio.com
           extensionFile: ${{ steps.publishToOpenVSX.outputs.vsixPath }}
           baseImagesUrl: "https://github.com/TheArqsz/BurpSense"
+          packagePath: "./vscode-extension"
