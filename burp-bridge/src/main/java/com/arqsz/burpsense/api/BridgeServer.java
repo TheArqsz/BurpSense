@@ -53,12 +53,13 @@ public class BridgeServer {
      */
     public void start() {
         HttpHandler routes = createRoutes();
-        HttpHandler withCors = new CorsMiddleware(settings).wrap(routes);
-        HttpHandler withAuth = new AuthenticationMiddleware(authenticationService, api).wrap(withCors);
+
+        HttpHandler withAuth = new AuthenticationMiddleware(authenticationService, api).wrap(routes);
+        HttpHandler withCors = new CorsMiddleware(settings).wrap(withAuth);
 
         server = Undertow.builder()
                 .addHttpListener(settings.getPort(), settings.getIp())
-                .setHandler(withAuth)
+                .setHandler(withCors)
                 .setServerOption(UndertowOptions.MAX_HEADER_SIZE, ServerConstants.DEFAULT_MAX_HEADER_SIZE)
                 .setServerOption(UndertowOptions.MAX_PARAMETERS, ServerConstants.DEFAULT_MAX_PARAMETERS)
                 .setServerOption(UndertowOptions.MAX_HEADERS, ServerConstants.DEFAULT_MAX_HEADERS)

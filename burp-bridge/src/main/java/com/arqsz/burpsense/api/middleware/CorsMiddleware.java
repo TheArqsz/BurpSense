@@ -31,18 +31,6 @@ public class CorsMiddleware {
             String origin = exchange.getRequestHeaders().getFirst("Origin");
             List<String> allowedOrigins = settings.getAllowedOrigins();
 
-            if (origin != null && allowedOrigins.contains(origin)) {
-                exchange.getResponseHeaders().put(
-                        new HttpString(ServerConstants.HEADER_ACCESS_CONTROL_ALLOW_ORIGIN),
-                        origin);
-                exchange.getResponseHeaders().put(
-                        new HttpString(ServerConstants.HEADER_ACCESS_CONTROL_ALLOW_CREDENTIALS),
-                        "true");
-            } else if (origin != null) {
-                exchange.setStatusCode(StatusCodes.FORBIDDEN);
-                return;
-            }
-
             exchange.getResponseHeaders().put(
                     new HttpString(ServerConstants.HEADER_ACCESS_CONTROL_ALLOW_METHODS),
                     ServerConstants.HTTP_METHODS_ALLOWED);
@@ -54,8 +42,30 @@ public class CorsMiddleware {
                     ServerConstants.CORS_MAX_AGE);
 
             if (exchange.getRequestMethod().equalToString(ServerConstants.HTTP_METHOD_OPTIONS)) {
+                if (origin != null && (allowedOrigins.contains(origin) || allowedOrigins.contains("*"))) {
+                    exchange.getResponseHeaders().put(
+                            new HttpString(ServerConstants.HEADER_ACCESS_CONTROL_ALLOW_ORIGIN),
+                            origin);
+                    exchange.getResponseHeaders().put(
+                            new HttpString(ServerConstants.HEADER_ACCESS_CONTROL_ALLOW_CREDENTIALS),
+                            "true");
+                }
                 exchange.setStatusCode(StatusCodes.NO_CONTENT);
                 return;
+            }
+
+            if (origin != null) {
+                if (allowedOrigins.contains(origin) || allowedOrigins.contains("*")) {
+                    exchange.getResponseHeaders().put(
+                            new HttpString(ServerConstants.HEADER_ACCESS_CONTROL_ALLOW_ORIGIN),
+                            origin);
+                    exchange.getResponseHeaders().put(
+                            new HttpString(ServerConstants.HEADER_ACCESS_CONTROL_ALLOW_CREDENTIALS),
+                            "true");
+                } else {
+                    exchange.setStatusCode(StatusCodes.FORBIDDEN);
+                    return;
+                }
             }
 
             next.handleRequest(exchange);
