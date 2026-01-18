@@ -174,11 +174,12 @@ export class MappingManager {
 
             return data;
         } catch (error) {
-            if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound' && !this.hasLoggedMissingFile) {
-                return this.getDefaultStore();
+            if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') {
+                if (!this.hasLoggedMissingFile) {
+                    Logger.info('Mappings file not found, creating default', 'Mapping');
+                    this.hasLoggedMissingFile = true;
+                }
             }
-
-            Logger.error('Failed to load mappings', error, 'Mapping');
             return this.getDefaultStore();
         }
     }
