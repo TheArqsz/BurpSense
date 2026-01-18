@@ -182,6 +182,7 @@ export const BUTTONS = {
 
     VIEW_DETAILS: 'View Details',
     RETRY_NOW: 'Retry Now',
+    STAY_OFFLINE: 'Stay Offline'
 } as const;
 
 export const DIAGNOSTIC_SOURCE = 'BurpSense';

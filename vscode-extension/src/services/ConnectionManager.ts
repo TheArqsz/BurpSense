@@ -666,6 +666,7 @@ export class ConnectionManager {
         const action = await vscode.window.showErrorMessage(
             `BurpSense: Bridge server error (HTTP ${status})`,
             BUTTONS.CHECK_SETTINGS,
+            BUTTONS.STAY_OFFLINE,
             BUTTONS.RETRY
         );
 
@@ -673,6 +674,8 @@ export class ConnectionManager {
             await vscode.commands.executeCommand('workbench.action.openSettings', CONFIG_SECTION);
         } else if (action === BUTTONS.RETRY) {
             await this.checkConnection();
+        } else if (action === BUTTONS.STAY_OFFLINE) {
+            this.disconnect();
         }
     }
 
@@ -694,6 +697,7 @@ export class ConnectionManager {
         const action = await vscode.window.showErrorMessage(
             `${MESSAGES.CONNECTION_TIMEOUT} to ${url}`,
             BUTTONS.CHECK_SETTINGS,
+            BUTTONS.STAY_OFFLINE,
             BUTTONS.RETRY
         );
 
@@ -701,6 +705,8 @@ export class ConnectionManager {
             await vscode.commands.executeCommand('workbench.action.openSettings', CONFIG_SECTION);
         } else if (action === BUTTONS.RETRY) {
             await this.checkConnection();
+        } else if (action === BUTTONS.STAY_OFFLINE) {
+            this.disconnect();
         }
     }
 
