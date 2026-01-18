@@ -622,7 +622,7 @@ export class ConnectionManager {
                 .replace('%d', String(this._issueCount));
             this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.remoteBackground');
         } else if (this._manuallyDisconnected) {
-            this.statusBarItem.text = 'BurpSense: Offline (Click to connect)';
+            this.statusBarItem.text = STATUS_BAR.OFFLINE;
             this.statusBarItem.tooltip = 'Manually disconnected. Click to reconnect.';
             this.statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
         } else {
@@ -632,51 +632,6 @@ export class ConnectionManager {
         }
 
         this.statusBarItem.show();
-    }
-
-    private async showNoTokenError(): Promise<void> {
-        const action = await vscode.window.showErrorMessage(
-            MESSAGES.NO_TOKEN,
-            BUTTONS.SET_TOKEN,
-            BUTTONS.HELP
-        );
-
-        if (action === BUTTONS.SET_TOKEN) {
-            await vscode.commands.executeCommand(COMMANDS.SET_TOKEN);
-        } else if (action === BUTTONS.HELP) {
-            this.showTroubleshootingGuide();
-        }
-    }
-
-    private async showAuthError(): Promise<void> {
-        const action = await vscode.window.showErrorMessage(
-            MESSAGES.AUTH_FAILED,
-            BUTTONS.UPDATE_TOKEN,
-            BUTTONS.HELP
-        );
-
-        if (action === BUTTONS.UPDATE_TOKEN) {
-            await vscode.commands.executeCommand(COMMANDS.SET_TOKEN);
-        } else if (action === BUTTONS.HELP) {
-            this.showTroubleshootingGuide();
-        }
-    }
-
-    private async showServerError(status: number): Promise<void> {
-        const action = await vscode.window.showErrorMessage(
-            `BurpSense: Bridge server error (HTTP ${status})`,
-            BUTTONS.CHECK_SETTINGS,
-            BUTTONS.STAY_OFFLINE,
-            BUTTONS.RETRY
-        );
-
-        if (action === BUTTONS.CHECK_SETTINGS) {
-            await vscode.commands.executeCommand('workbench.action.openSettings', CONFIG_SECTION);
-        } else if (action === BUTTONS.RETRY) {
-            await this.checkConnection();
-        } else if (action === BUTTONS.STAY_OFFLINE) {
-            this.disconnect();
-        }
     }
 
     private handleConnectionError(error: any): void {
@@ -693,73 +648,156 @@ export class ConnectionManager {
         }
     }
 
-    private async showTimeoutError(url: string): Promise<void> {
-        const action = await vscode.window.showErrorMessage(
-            `${MESSAGES.CONNECTION_TIMEOUT} to ${url}`,
-            BUTTONS.CHECK_SETTINGS,
-            BUTTONS.STAY_OFFLINE,
-            BUTTONS.RETRY
-        );
-
-        if (action === BUTTONS.CHECK_SETTINGS) {
-            await vscode.commands.executeCommand('workbench.action.openSettings', CONFIG_SECTION);
-        } else if (action === BUTTONS.RETRY) {
-            await this.checkConnection();
-        } else if (action === BUTTONS.STAY_OFFLINE) {
-            this.disconnect();
+    private async showConnectionError(
+        message: string,
+        options: {
+            detail?: string;
+            buttons: Array<{
+                label: string;
+                action: () => Thenable<void> | Promise<void> | void;
+            }>;
         }
+    ): Promise<void> {
+        const buttonLabels = options.buttons.map(b => b.label);
+
+        const action = options.detail
+            ? await vscode.window.showErrorMessage(
+                message,
+                { modal: false, detail: options.detail },
+                ...buttonLabels
+            )
+            : await vscode.window.showErrorMessage(message, ...buttonLabels);
+
+        const selectedButton = options.buttons.find(b => b.label === action);
+        if (selectedButton) {
+            await selectedButton.action();
+        }
+    }
+
+    private async showNoTokenError(): Promise<void> {
+        await this.showConnectionError(MESSAGES.NO_TOKEN, {
+            buttons: [
+                {
+                    label: BUTTONS.SET_TOKEN,
+                    action: () => vscode.commands.executeCommand(COMMANDS.SET_TOKEN)
+                },
+                {
+                    label: BUTTONS.HELP,
+                    action: () => this.showTroubleshootingGuide()
+                }
+            ]
+        });
+    }
+
+    private async showAuthError(): Promise<void> {
+        await this.showConnectionError(MESSAGES.AUTH_FAILED, {
+            buttons: [
+                {
+                    label: BUTTONS.UPDATE_TOKEN,
+                    action: () => vscode.commands.executeCommand(COMMANDS.SET_TOKEN)
+                },
+                {
+                    label: BUTTONS.HELP,
+                    action: () => this.showTroubleshootingGuide()
+                }
+            ]
+        });
+    }
+
+    private async showServerError(status: number): Promise<void> {
+        await this.showConnectionError(
+            MESSAGES.BRIDGE_SERVER_ERROR.replace('%d', String(status)),
+            {
+                buttons: [
+                    {
+                        label: BUTTONS.CHECK_SETTINGS,
+                        action: () => vscode.commands.executeCommand('workbench.action.openSettings', CONFIG_SECTION)
+                    },
+                    {
+                        label: BUTTONS.STAY_OFFLINE,
+                        action: () => this.disconnect()
+                    },
+                    {
+                        label: BUTTONS.RETRY,
+                        action: () => this.checkConnection()
+                    }
+                ]
+            }
+        );
+    }
+
+    private async showTimeoutError(url: string): Promise<void> {
+        await this.showConnectionError(
+            `${MESSAGES.CONNECTION_TIMEOUT} to ${url}`,
+            {
+                buttons: [
+                    {
+                        label: BUTTONS.CHECK_SETTINGS,
+                        action: () => vscode.commands.executeCommand('workbench.action.openSettings', CONFIG_SECTION)
+                    },
+                    {
+                        label: BUTTONS.STAY_OFFLINE,
+                        action: () => this.disconnect()
+                    },
+                    {
+                        label: BUTTONS.RETRY,
+                        action: () => this.checkConnection()
+                    }
+                ]
+            }
+        );
     }
 
     private async showConnectionRefusedError(url: string): Promise<void> {
-        const action = await vscode.window.showErrorMessage(
-            MESSAGES.CONNECTION_REFUSED,
-            {
-                modal: false,
-                detail:
-                    `Connection refused on ${url}\n\n` +
-                    'Make sure:\n' +
-                    '• Burp Suite is running\n' +
-                    '• BurpSense Bridge extension is loaded\n' +
-                    '• Server is started in Bridge Settings tab\n' +
-                    '• Firewall allows the connection'
-            },
-            BUTTONS.OPEN_SETTINGS,
-            BUTTONS.HELP
-        );
-
-        if (action === BUTTONS.OPEN_SETTINGS) {
-            await vscode.commands.executeCommand('workbench.action.openSettings', CONFIG_SECTION);
-        } else if (action === BUTTONS.HELP) {
-            this.showTroubleshootingGuide();
-        }
+        await this.showConnectionError(MESSAGES.CONNECTION_REFUSED, {
+            detail:
+                `Connection refused on ${url}\n\n` +
+                'Make sure:\n' +
+                '• Burp Suite is running\n' +
+                '• BurpSense Bridge extension is loaded\n' +
+                '• Server is started in Bridge Settings tab\n' +
+                '• Firewall allows the connection',
+            buttons: [
+                {
+                    label: BUTTONS.OPEN_SETTINGS,
+                    action: () => vscode.commands.executeCommand('workbench.action.openSettings', CONFIG_SECTION)
+                },
+                {
+                    label: BUTTONS.HELP,
+                    action: () => this.showTroubleshootingGuide()
+                }
+            ]
+        });
     }
 
     private async showInvalidHostError(url: string): Promise<void> {
-        const action = await vscode.window.showErrorMessage(
-            `BurpSense: Invalid host ${url}`,
-            BUTTONS.FIX_SETTINGS,
-            BUTTONS.HELP
-        );
-
-        if (action === BUTTONS.FIX_SETTINGS) {
-            await vscode.commands.executeCommand('workbench.action.openSettings', CONFIG_KEYS.BRIDGE_IP);
-        } else if (action === BUTTONS.HELP) {
-            this.showTroubleshootingGuide();
-        }
+        await this.showConnectionError(MESSAGES.INVALID_HOST.replace('%s', url), {
+            buttons: [
+                {
+                    label: BUTTONS.FIX_SETTINGS,
+                    action: () => vscode.commands.executeCommand('workbench.action.openSettings', CONFIG_KEYS.BRIDGE_IP)
+                },
+                {
+                    label: BUTTONS.HELP,
+                    action: () => this.showTroubleshootingGuide()
+                }
+            ]
+        });
     }
 
     private async showGenericError(message: string): Promise<void> {
-        const action = await vscode.window.showErrorMessage(
-            `BurpSense: Connection error - ${message}`,
-            BUTTONS.RETRY,
-            BUTTONS.HELP
-        );
-
-        if (action === BUTTONS.RETRY) {
-            await this.checkConnection();
-        } else if (action === BUTTONS.HELP) {
-            this.showTroubleshootingGuide();
-        }
+        await this.showConnectionError(MESSAGES.GENERIC_CONNECTION_ERROR.replace('%s', message), {
+            buttons: [
+                {
+                    label: BUTTONS.RETRY,
+                    action: () => this.checkConnection()
+                },
+                {
+                    label: BUTTONS.HELP,
+                    action: () => this.showTroubleshootingGuide()
+                }
+            ]
+        });
     }
 
     private showTroubleshootingGuide(): void {

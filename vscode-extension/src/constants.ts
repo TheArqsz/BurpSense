@@ -115,6 +115,9 @@ export const MESSAGES = {
     AUTH_FAILED: 'BurpSense: Authentication failed - Invalid API token',
     CONNECTION_TIMEOUT: 'BurpSense: Connection timeout',
     CONNECTION_REFUSED: 'BurpSense: Cannot connect to bridge',
+    INVALID_HOST: 'BurpSense: Invalid host %s',
+    GENERIC_CONNECTION_ERROR: 'BurpSense: Connection error - %s',
+    BRIDGE_SERVER_ERROR: 'BurpSense: Bridge server error (HTTP %d)',
     MAX_RETRIES: 'BurpSense: Failed to connect after multiple attempts',
 
     NO_ACTIVE_EDITOR: 'No active editor. Open a file first.',
@@ -196,6 +199,7 @@ export const STATUS_BAR = {
     CONNECTED_FORMAT: 'BurpSense: %d issues',
     DISCONNECTED: 'BurpSense: Disconnected',
     CONNECTING: '$(sync~spin) BurpSense: Connecting...',
+    OFFLINE: 'BurpSense: Offline (Click to connect)',
     SEARCH_FORMAT: '$(search) "%s"',
     TOOLTIP_FORMAT: 'Connected to %s\nIssues: %d\n\nClick for quick actions',
     TOOLTIP_DISCONNECTED: 'Not connected - Click to troubleshoot',
