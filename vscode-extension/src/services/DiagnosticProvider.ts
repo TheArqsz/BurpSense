@@ -15,6 +15,9 @@ export class DiagnosticProvider {
     private readonly diagnosticCollection: vscode.DiagnosticCollection;
     private driftNotificationShownPerWorkspace: Map<string, boolean> = new Map();
 
+    private similarityCache: Map<string, number> = new Map();
+    private readonly SIMILARITY_CACHE_SIZE = 100;
+
     constructor(
         private context: vscode.ExtensionContext,
         private connectionManager: ConnectionManager,
@@ -35,6 +38,8 @@ export class DiagnosticProvider {
      */
     public async refreshDiagnostics(): Promise<void> {
         try {
+            this.similarityCache.clear();
+
             const store = await this.mappingManager.loadMappings();
             const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
             if (!workspaceFolder) {
@@ -252,7 +257,21 @@ export class DiagnosticProvider {
             return sample1.includes(sample2) || sample2.includes(sample1);
         }
 
-        const similarity = this.calculateSimilarity(current, original);
+        const cacheKey = `${s1}|${s2}`;
+        let similarity = this.similarityCache.get(cacheKey);
+
+        if (similarity === undefined) {
+            similarity = this.calculateSimilarity(current, original);
+
+            if (this.similarityCache.size >= this.SIMILARITY_CACHE_SIZE) {
+                const firstKey = this.similarityCache.keys().next().value;
+                if (firstKey !== undefined) {
+                    this.similarityCache.delete(firstKey);
+                }
+            }
+
+            this.similarityCache.set(cacheKey, similarity);
+        }
         return similarity >= SIMILARITY.MINIMUM_THRESHOLD;
     }
 
