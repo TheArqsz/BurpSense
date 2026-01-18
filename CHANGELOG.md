@@ -1,3 +1,11 @@
+## [0.2.3](https://github.com/TheArqsz/BurpSense/compare/v0.2.2...v0.2.3) (2026-01-18)
+
+
+### Bug Fixes
+
+* **deps:** replace node-fetch with native fetch ([4eeb720](https://github.com/TheArqsz/BurpSense/commit/4eeb72055be9007dda804be5598262307b31c646))
+* **lifecycle:** implement deactivate cleanup ([ae12058](https://github.com/TheArqsz/BurpSense/commit/ae12058819f5e2b208f076fd7c5a4557ae9e1523))
+
 ## [0.2.2](https://github.com/TheArqsz/BurpSense/compare/v0.2.1...v0.2.2) (2026-01-18)
 
 
