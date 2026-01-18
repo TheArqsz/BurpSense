@@ -341,8 +341,8 @@ export class DiagnosticProvider {
      * 
      * Search strategy:
      * 1. Nearby lines
-     * 2. Context match
-     * 3. Proximity
+     * 2. Context match with full scan
+     * 3. Proximity match (closest occurrence)
      * 
      * For files >2000 lines, uses sampling.
      * 
@@ -376,14 +376,20 @@ export class DiagnosticProvider {
             : this.getSearchIndices(lineCount, originalLine, DRIFT.MAX_FULL_SCAN_ITERATIONS);
 
 
-        if (mapping.contextBefore || mapping.contextAfter) {
-            const normalizedContextBefore = mapping.contextBefore?.trim();
-            const normalizedContextAfter = mapping.contextAfter?.trim();
+        const candidates: number[] = [];
+        const normalizedContextBefore = mapping.contextBefore?.trim();
+        const normalizedContextAfter = mapping.contextAfter?.trim();
+        const hasContext = normalizedContextBefore || normalizedContextAfter;
 
-            for (const i of searchIndices) {
-                const target = document.lineAt(i).text.trim();
-                if (!target.includes(searchText)) continue;
+        for (const i of searchIndices) {
+            const target = document.lineAt(i).text.trim();
 
+            const containsMatch = target.includes(searchText);
+            if (!containsMatch) continue;
+
+            candidates.push(i);
+
+            if (hasContext) {
                 let contextMatch = true;
 
                 if (normalizedContextBefore && i > 0) {
@@ -403,13 +409,6 @@ export class DiagnosticProvider {
                 if (contextMatch) {
                     return { found: true, line: i };
                 }
-            }
-        }
-
-        const candidates: number[] = [];
-        for (let i = 0; i < document.lineCount; i++) {
-            if (document.lineAt(i).text.includes(searchText)) {
-                candidates.push(i);
             }
         }
 
