@@ -1,7 +1,18 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import { defineConfig } from 'eslint/config';
 
-export default tseslint.config(
+export default defineConfig(
+  {
+    ignores: [
+      'out/**',
+      'dist/**',
+      'node_modules/**',
+      '**/*.map',
+      '.vscode-test/**',
+      '*.vsix'
+    ],
+  },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -14,11 +25,13 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': 'warn',
-      'no-console': 'off',
+      '@typescript-eslint/no-unused-vars': ['warn', {
+        'argsIgnorePattern': '^_',
+        'varsIgnorePattern': '^_'
+      }],
+      'no-debugger': 'error',
+      'prefer-const': 'warn',
+      'no-var': 'error'
     },
-  },
-  {
-    ignores: ['out/**', 'node_modules/**', 'dist/**'],
   }
 );
