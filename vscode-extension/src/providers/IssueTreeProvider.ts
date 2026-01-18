@@ -4,6 +4,7 @@ import { ConnectionManager } from '../services/ConnectionManager';
 import { Logger } from '../services/Logger';
 import { MappingManager } from '../services/MappingManager';
 import { BurpIssue } from '../types';
+import { AnyConnectionEvent, ConnectionEventType } from '../events/ConnectionEvents';
 
 /**
  * Cache entry with timestamp for expiration tracking
@@ -41,9 +42,72 @@ export class IssueTreeProvider implements vscode.TreeDataProvider<IssueItem> {
     private shouldRestoreState: boolean = true;
     private cacheCleanupInterval?: NodeJS.Timeout;
 
+    private eventSubscription?: vscode.Disposable;
+
     constructor(private connectionManager: ConnectionManager, mappingManager: MappingManager) {
         this.mappingManager = mappingManager;
         this.cacheCleanupInterval = setInterval(() => this.cleanupCaches(), CACHE.CLEANUP_INTERVAL_MS);
+
+        this.subscribeToConnectionEvents();
+    }
+
+    /**
+     * Subscribes to ConnectionManager events
+     * Replaces direct method calls with event-driven architecture
+     */
+    private subscribeToConnectionEvents(): void {
+        this.eventSubscription = this.connectionManager.events((event: AnyConnectionEvent) => {
+            switch (event.type) {
+                case ConnectionEventType.Connected:
+                    Logger.info(
+                        `Connection established: ${event.data.issueCount} issues available`,
+                        'Events'
+                    );
+                    this._onDidChangeTreeData.fire();
+                    break;
+
+                case ConnectionEventType.Disconnected:
+                    Logger.info(`Disconnected: ${event.data.reason}`, 'Events');
+                    this.cachedIssues = [];
+                    this.invalidateGroupCache();
+                    this._onDidChangeTreeData.fire();
+                    break;
+
+                case ConnectionEventType.IssuesReceived:
+                    Logger.info(
+                        `Received ${event.data.issues.length} issues via event`,
+                        'Events'
+                    );
+                    this.updateCache(event.data.issues, event.data.fireUpdate ?? true);
+                    break;
+
+                case ConnectionEventType.IssuesRemoved:
+                    Logger.info(
+                        `Removing ${event.data.issueIds.length} issues via event`,
+                        'Events'
+                    );
+                    this.removeIssues(event.data.issueIds);
+                    break;
+
+                case ConnectionEventType.SyncCompleted:
+                    Logger.info(
+                        `Sync completed: +${event.data.newCount} new, -${event.data.removedCount} removed`,
+                        'Events'
+                    );
+                    break;
+
+                case ConnectionEventType.ConnectionError:
+                    Logger.error(
+                        'Connection error received via event',
+                        event.data.error,
+                        'Events'
+                    );
+                    break;
+
+                default:
+                    Logger.warn(`Unknown event type received: ${(event as any).type}`, 'Events');
+            }
+        });
     }
 
     /**
@@ -162,7 +226,6 @@ export class IssueTreeProvider implements vscode.TreeDataProvider<IssueItem> {
                 const issues = await this.connectionManager.getAllIssues();
                 this.cachedIssues = issues;
                 this.cacheTimestamp = Date.now();
-                this.connectionManager.updateStatus(true);
                 Logger.info(`Refresh complete: ${this.cachedIssues.length} issues`, 'Cache');
             } catch (error) {
                 Logger.error('Failed to force refresh', error, 'Cache');
@@ -726,6 +789,11 @@ export class IssueTreeProvider implements vscode.TreeDataProvider<IssueItem> {
         if (this.cacheCleanupInterval) {
             clearInterval(this.cacheCleanupInterval);
             this.cacheCleanupInterval = undefined;
+        }
+
+        if (this.eventSubscription) {
+            this.eventSubscription.dispose();
+            this.eventSubscription = undefined;
         }
 
         this.groupedDataCache.clear();

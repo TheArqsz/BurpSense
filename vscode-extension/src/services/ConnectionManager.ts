@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { WebSocket } from 'ws';
 import { BUTTONS, COMMANDS, CONFIDENCE_LEVELS, CONFIG_KEYS, CONFIG_SECTION, CONNECTION, CONTEXT_KEYS, MESSAGES, SEVERITY_LEVELS, STATUS_BAR } from '../constants';
-import { IssueTreeProvider } from '../providers/IssueTreeProvider';
+import { AnyConnectionEvent, ConnectionEventEmitter } from '../events/ConnectionEvents';
 import { BurpIssue, IncrementalIssuesResponse } from '../types';
 import { Logger } from './Logger';
 
@@ -25,15 +25,25 @@ export class ConnectionManager {
     private circuitBreakerOpen: boolean = false;
     private lastFailureTime?: number;
 
-    private issueTreeProvider?: IssueTreeProvider;
+    private readonly eventEmitter: ConnectionEventEmitter;
 
     constructor(private context: vscode.ExtensionContext) {
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
         this.statusBarItem.command = COMMANDS.STATUS_MENU;
         this.context.subscriptions.push(this.statusBarItem);
 
+        this.eventEmitter = new ConnectionEventEmitter();
+        this.context.subscriptions.push(this.eventEmitter);
+
         this.updateStatus(false);
         this.startPolling();
+    }
+
+    /**
+     * Get the event emitter for subscribing to connection events
+     */
+    public get events(): vscode.Event<AnyConnectionEvent> {
+        return this.eventEmitter.onEvent;
     }
 
     /**
@@ -88,15 +98,10 @@ export class ConnectionManager {
 
         this.knownIssueIds.clear();
         this._isConnected = false;
-        Logger.info('ConnectionManager disposed', 'Lifecycle');
-    }
 
-    /**
-     * Sets the issue tree provider for direct cache updates.
-     * Called during extension initialization.
-     */
-    public setIssueTreeProvider(provider: IssueTreeProvider): void {
-        this.issueTreeProvider = provider;
+        this.eventEmitter.dispose();
+
+        Logger.info('ConnectionManager disposed', 'Lifecycle');
     }
 
     private initWebSocket(token: string) {
@@ -173,16 +178,26 @@ export class ConnectionManager {
                 this.circuitBreakerOpen = false;
 
                 if (this.knownIssueIds.size === 0) {
-                    const issues = await this.getAllIssues();
-                    if (this.issueTreeProvider) {
-                        this.issueTreeProvider.updateCache(issues, false);
+                    try {
+                        const issues = await this.getAllIssues();
+
+                        this._issueCount = issues.length;
+                        issues.forEach(i => this.knownIssueIds.add(i.id));
+
+                        if (issues.length > 0) {
+                            this.eventEmitter.emitIssuesReceived(issues, false);
+                        }
+                    } catch (error) {
+                        Logger.error('Failed to fetch initial issues', error, 'Connection');
+                        this._issueCount = 0;
                     }
-                    this._issueCount = issues.length;
-                } else if (this.issueTreeProvider) {
-                    this._issueCount = this.issueTreeProvider.getCachedIssues().length || this.knownIssueIds.size;
+                } else {
+                    this._issueCount = this.knownIssueIds.size;
                 }
 
                 this.updateStatus(true);
+
+                this.eventEmitter.emitConnected(this._issueCount);
 
                 if (this.onIssuesUpdated) {
                     this.onIssuesUpdated();
@@ -191,15 +206,24 @@ export class ConnectionManager {
                 this.updateStatus(false);
                 this.openCircuitBreaker();
                 this.showAuthError();
+                this.eventEmitter.emitDisconnected('authentication_failed');
             } else {
                 this.updateStatus(false);
                 this.handleFailedConnection();
                 this.showServerError(response.status);
+                this.eventEmitter.emitDisconnected(`server_error_${response.status}`);
+
             }
         } catch (error: any) {
             this.updateStatus(false);
             this.handleFailedConnection();
             this.handleConnectionError(error);
+            this.eventEmitter.emitConnectionError(
+                error instanceof Error ? error : new Error(String(error))
+            );
+
+            this.eventEmitter.emitDisconnected(error.name === 'AbortError' ? 'timeout' : 'error');
+
         } finally {
             clearTimeout(timeout);
         }
@@ -238,6 +262,8 @@ export class ConnectionManager {
         this._manuallyDisconnected = true;
         this.stopPolling();
         this.updateStatus(false);
+
+        this.eventEmitter.emitDisconnected('manual');
 
         Logger.info('User manually disconnected', 'Connection');
 
@@ -307,9 +333,11 @@ export class ConnectionManager {
                     );
                 }
 
-                if (this.issueTreeProvider && data.removedIds.length > 0) {
-                    this.issueTreeProvider.removeIssues(data.removedIds);
+                if (data.removedIds.length > 0) {
+                    this.eventEmitter.emitIssuesRemoved(data.removedIds);
                 }
+
+                this.eventEmitter.emitSyncCompleted(data.newIssues.length, data.removedIds.length);
 
                 return data.newIssues;
             } else {
@@ -851,8 +879,8 @@ export class ConnectionManager {
         try {
             const issues = await this.getIssues();
 
-            if (this.issueTreeProvider) {
-                this.issueTreeProvider.updateCache(issues);
+            if (issues.length > 0) {
+                this.eventEmitter.emitIssuesReceived(issues, true);
             }
 
             this._issueCount = this.knownIssueIds.size;
@@ -863,6 +891,7 @@ export class ConnectionManager {
             }
         } catch (error) {
             Logger.error('WebSocket refresh failed', error, 'Connection');
+            this.eventEmitter.emitConnectionError(error as Error);
         }
     }
 }

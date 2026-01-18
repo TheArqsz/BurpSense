@@ -30,7 +30,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     const issueTreeProvider = new IssueTreeProvider(connectionManager, mappingManager);
 
-    connectionManager.setIssueTreeProvider(issueTreeProvider);
     connectionManager.setIssuesUpdatedCallback(async () => {
         issueTreeProvider.refresh();
         await diagnosticProvider.refreshDiagnostics();
