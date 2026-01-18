@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import * as vscode from 'vscode';
 import { WebSocket } from 'ws';
 import { BUTTONS, COMMANDS, CONFIDENCE_LEVELS, CONFIG_KEYS, CONFIG_SECTION, CONNECTION, CONTEXT_KEYS, MESSAGES, SEVERITY_LEVELS, STATUS_BAR } from '../constants';
@@ -66,7 +65,30 @@ export class ConnectionManager {
      */
     public dispose(): void {
         this.stopPolling();
-        this.statusBarItem.dispose();
+
+        if (this.ws) {
+            try {
+                this.ws.removeAllListeners();
+                if (this.ws.readyState === WebSocket.OPEN ||
+                    this.ws.readyState === WebSocket.CONNECTING) {
+                    this.ws.close();
+                }
+                this.ws = undefined;
+                Logger.info('WebSocket closed', 'Lifecycle');
+            } catch (error) {
+                Logger.error('Error closing WebSocket', error, 'Lifecycle');
+            }
+        }
+
+        try {
+            this.statusBarItem.dispose();
+        } catch (error) {
+            Logger.error('Error disposing status bar', error, 'Lifecycle');
+        }
+
+        this.knownIssueIds.clear();
+        this._isConnected = false;
+        Logger.info('ConnectionManager disposed', 'Lifecycle');
     }
 
     /**

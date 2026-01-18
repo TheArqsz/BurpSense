@@ -5,7 +5,8 @@
   "version": "0.2.2",
   "publisher": "arqsz",
   "engines": {
-    "vscode": "^1.108.1"
+    "vscode": "^1.108.1",
+    "node": ">=18.0.0"
   },
   "categories": [
     "Other"
@@ -343,14 +344,12 @@
     "web security"
   ],
   "dependencies": {
-    "node-fetch": "^3.3.2",
     "typescript": "^5.9.3",
     "ws": "^8.19.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@types/node": "^25.0.8",
-    "@types/node-fetch": "^2.6.13",
     "@types/vscode": "^1.108.1",
     "@types/ws": "^8.18.1",
     "eslint": "^9.39.2",
