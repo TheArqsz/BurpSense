@@ -490,27 +490,42 @@ export class MappingManager {
             throw new Error('Invalid file path provided');
         }
 
-        const normalized = path.resolve(path.normalize(absolutePath));
+        const normalized = path.normalize(absolutePath);
+        const canonicalPath = path.resolve(normalized);
 
-        const workspace = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(normalized));
+        const workspace = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(canonicalPath));
         if (!workspace) {
-            throw new Error(`Not in workspace: ${normalized}`);
+            throw new Error(`Not in workspace: ${canonicalPath}`);
         }
 
-        const workspaceAbs = path.resolve(workspace.uri.fsPath);
+        const workspaceCanonical = path.resolve(workspace.uri.fsPath);
 
-        if (!normalized.startsWith(workspaceAbs + path.sep) && normalized !== workspaceAbs) {
-            throw new Error(`Security: Path escapes workspace: ${normalized}`);
+        const isInside = canonicalPath.startsWith(workspaceCanonical + path.sep) ||
+            canonicalPath === workspaceCanonical;
+
+        if (!isInside) {
+            Logger.error(`Path traversal attempt blocked: ${canonicalPath}`, undefined, 'Security');
+            throw new Error(`Security: Path escapes workspace: ${canonicalPath}`);
         }
 
-        const relativePath = path.relative(workspaceAbs, normalized);
+        const relativePath = path.relative(workspaceCanonical, canonicalPath);
 
         if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+            Logger.error(`Invalid relative path generated: ${relativePath}`, undefined, 'Security');
             throw new Error(`Security: Relative path invalid: ${relativePath}`);
         }
 
         if (relativePath.includes('\0')) {
+            Logger.error(`Null byte detected in path: ${relativePath}`, undefined, 'Security');
             throw new Error('Security: Null byte in path');
+        }
+
+        if (process.platform === 'win32') {
+            const alternativeSep = path.sep === '\\' ? '/' : '\\';
+            if (relativePath.includes(alternativeSep)) {
+                Logger.error(`Mixed separators in path: ${relativePath}`, undefined, 'Security');
+                throw new Error('Security: Mixed path separators detected');
+            }
         }
 
         return relativePath;
