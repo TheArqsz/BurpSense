@@ -14,6 +14,28 @@ public class RegexValidator {
     private static final long COMPILATION_TIMEOUT_MS = 100;
     private static final long MATCH_TIMEOUT_MS = 500;
 
+    private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
+
+    /**
+     * Checks if a regex pattern is valid and safe.
+     *
+     * @param regex The regex string to check
+     * @return true if valid and safe, false otherwise
+     */
+    public static boolean isValidRegex(String regex) {
+        if (regex == null)
+            return false;
+        if (regex.isEmpty())
+            return true;
+
+        try {
+            compileSafe(regex, Pattern.CASE_INSENSITIVE);
+            return true;
+        } catch (RegexValidationException e) {
+            return false;
+        }
+    }
+
     /**
      * Validates and compiles a regex pattern
      * 
@@ -23,8 +45,12 @@ public class RegexValidator {
      * @throws RegexValidationException if pattern is rejected
      */
     public static Pattern compileSafe(String regex, int flags) throws RegexValidationException {
-        if (regex == null || regex.isEmpty()) {
+        if (regex == null) {
             throw new RegexValidationException("Pattern cannot be null or empty");
+        }
+
+        if (regex.isEmpty()) {
+            return Pattern.compile("", flags);
         }
 
         if (regex.length() > MAX_PATTERN_LENGTH) {
@@ -84,8 +110,7 @@ public class RegexValidator {
     private static Pattern compileWithTimeout(String regex, int flags)
             throws TimeoutException, PatternSyntaxException {
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<Pattern> future = executor.submit(() -> Pattern.compile(regex, flags));
+        Future<Pattern> future = EXECUTOR.submit(() -> Pattern.compile(regex, flags));
 
         try {
             return future.get(COMPILATION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -101,8 +126,6 @@ public class RegexValidator {
                 throw (PatternSyntaxException) cause;
             }
             throw new RuntimeException("Pattern compilation failed", cause);
-        } finally {
-            executor.shutdownNow();
         }
     }
 
@@ -118,21 +141,13 @@ public class RegexValidator {
             return false;
         }
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<Boolean> future = executor.submit(() -> pattern.matcher(input).find());
+        Future<Boolean> future = EXECUTOR.submit(() -> pattern.matcher(input).find());
 
         try {
             return future.get(MATCH_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        } catch (TimeoutException e) {
+        } catch (Exception e) {
             future.cancel(true);
             return false;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        } catch (ExecutionException e) {
-            return false;
-        } finally {
-            executor.shutdownNow();
         }
     }
 
