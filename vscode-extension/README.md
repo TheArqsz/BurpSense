@@ -3,6 +3,10 @@
   
 [![Build and Publish Release](https://github.com/TheArqsz/BurpSense/actions/workflows/release.yml/badge.svg)](https://github.com/TheArqsz/BurpSense/actions/workflows/release.yml)
 
+
+![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/arqsz.burpsense?include_prereleases&style=flat-square&label=Visual%20Studio%20Marketplace&color=blue)
+![Open VSX Version](https://img.shields.io/open-vsx/v/arqsz/burpsense?style=flat-square&label=Open%20VSX%20Marketplace)
+
 </div>
 
 BurpSense bridges the gap between security testing in Burp Suite and your development environment in VS Code. The core idea is simple: instead of constantly switching between tools to cross-reference vulnerabilities with source code, you can map Burp's findings directly to the lines where issues occur. This gives you inline diagnostics, full advisory details and a persistent record of what needs attention.
