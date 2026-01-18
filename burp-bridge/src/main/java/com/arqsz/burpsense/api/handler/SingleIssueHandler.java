@@ -6,6 +6,7 @@ import java.util.List;
 import com.arqsz.burpsense.api.BridgeServer;
 import com.arqsz.burpsense.constants.ServerConstants;
 import com.arqsz.burpsense.service.IssueService;
+import com.arqsz.burpsense.util.IssueJsonMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -65,7 +66,7 @@ public class SingleIssueHandler implements HttpHandler {
             return;
         }
 
-        JsonObject json = mapIssueToJson(foundIssue, issueId);
+        JsonObject json = IssueJsonMapper.toJson(foundIssue, issueId);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, ServerConstants.CONTENT_TYPE_JSON);
         exchange.getResponseSender().send(json.toString());

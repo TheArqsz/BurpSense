@@ -1,6 +1,5 @@
 package com.arqsz.burpsense.api.handler;
 
-import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -12,6 +11,7 @@ import com.arqsz.burpsense.api.BridgeServer;
 import com.arqsz.burpsense.constants.IssueConstants;
 import com.arqsz.burpsense.constants.ServerConstants;
 import com.arqsz.burpsense.service.IssueService;
+import com.arqsz.burpsense.util.IssueJsonMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -83,7 +83,7 @@ public class IssuesHandler implements HttpHandler {
                 currentIssueIds.add(issueId);
 
                 if (!knownIds.contains(issueId)) {
-                    newIssues.add(mapIssueToJson(issue, issueId));
+                    newIssues.add(IssueJsonMapper.toJson(issue, issueId));
                 }
             }
         }
@@ -125,55 +125,6 @@ public class IssuesHandler implements HttpHandler {
         }
 
         return namePattern.matcher(issue.name()).find();
-    }
-
-    /**
-     * Converts an AuditIssue to JSON format
-     */
-    private JsonObject mapIssueToJson(AuditIssue issue, String issueId) {
-        JsonObject json = new JsonObject();
-
-        json.addProperty("id", issueId);
-        json.addProperty("name", issue.name());
-        json.addProperty("severity", issue.severity().name());
-        json.addProperty("confidence", issue.confidence().name());
-        json.addProperty("baseUrl", issue.baseUrl());
-        json.addProperty("detail", issue.detail());
-        json.addProperty("remediation", issue.remediation());
-
-        if (issue.definition() != null) {
-            json.addProperty("background", issue.definition().background());
-        }
-
-        JsonObject service = new JsonObject();
-        service.addProperty("host", issue.httpService().host());
-        service.addProperty("port", issue.httpService().port());
-        service.addProperty("protocol", issue.httpService().secure() ? "https" : "http");
-        json.add("service", service);
-
-        if (!issue.requestResponses().isEmpty()) {
-            var rr = issue.requestResponses().get(0);
-
-            JsonArray markersArray = new JsonArray();
-            rr.responseMarkers().forEach(m -> {
-                JsonObject marker = new JsonObject();
-                marker.addProperty("start", m.range().startIndexInclusive());
-                marker.addProperty("end", m.range().endIndexExclusive());
-                markersArray.add(marker);
-            });
-            json.add("responseMarkers", markersArray);
-
-            if (rr.request() != null) {
-                json.addProperty("request",
-                        Base64.getEncoder().encodeToString(rr.request().toByteArray().getBytes()));
-            }
-            if (rr.response() != null) {
-                json.addProperty("response",
-                        Base64.getEncoder().encodeToString(rr.response().toByteArray().getBytes()));
-            }
-        }
-
-        return json;
     }
 
     /**
