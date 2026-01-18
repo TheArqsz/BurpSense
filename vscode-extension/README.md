@@ -1,4 +1,9 @@
 <h1 align="center">BurpSense</h1>
+<div align="center">
+  
+[![Build and Publish Release](https://github.com/TheArqsz/BurpSense/actions/workflows/release.yml/badge.svg)](https://github.com/TheArqsz/BurpSense/actions/workflows/release.yml)
+
+</div>
 
 BurpSense bridges the gap between security testing in Burp Suite and your development environment in VS Code. The core idea is simple: instead of constantly switching between tools to cross-reference vulnerabilities with source code, you can map Burp's findings directly to the lines where issues occur. This gives you inline diagnostics, full advisory details and a persistent record of what needs attention.
 
