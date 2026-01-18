@@ -282,4 +282,13 @@ async function handleFileDeleted(
  * Called when extension is unloaded.
  */
 export function deactivate(): void {
+    try {
+        Logger.info('Cleaning up Logger...', 'Lifecycle');
+        Logger.dispose();
+
+        vscode.commands.executeCommand('setContext', CONTEXT_KEYS.HAS_FILTER, false);
+        vscode.commands.executeCommand('setContext', CONFIG_KEYS.IN_SCOPE_ONLY, false);
+    } catch (error) {
+        console.error('Error during deactivation:', error);
+    }
 }
