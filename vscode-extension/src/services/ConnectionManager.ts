@@ -273,7 +273,7 @@ export class ConnectionManager {
             });
 
             if (response.ok) {
-                const data: IncrementalIssuesResponse = await response.json();
+                const data = await response.json() as IncrementalIssuesResponse;
 
                 data.newIssues.forEach(i => this.knownIssueIds.add(i.id));
                 data.removedIds.forEach(id => this.knownIssueIds.delete(id));
@@ -348,7 +348,7 @@ export class ConnectionManager {
             });
 
             if (response.ok) {
-                const data: IncrementalIssuesResponse = await response.json();
+                const data = await response.json() as IncrementalIssuesResponse;
                 const allIssues = data.newIssues;
                 this.knownIssueIds.clear();
                 allIssues.forEach(i => this.knownIssueIds.add(i.id));
@@ -404,7 +404,7 @@ export class ConnectionManager {
             });
 
             if (response.ok) {
-                const issue: BurpIssue = await response.json();
+                const issue = await response.json() as BurpIssue;
                 Logger.info(`Fetched single issue: ${issueId.substring(0, 8)}...`, 'Connection');
                 return issue;
             } else if (response.status === 404) {
