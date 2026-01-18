@@ -43,7 +43,7 @@ export class IssueTreeProvider implements vscode.TreeDataProvider<IssueItem> {
 
     constructor(private connectionManager: ConnectionManager, mappingManager: MappingManager) {
         this.mappingManager = mappingManager;
-        setInterval(() => this.cleanupCaches(), CACHE.CLEANUP_INTERVAL_MS);
+        this.cacheCleanupInterval = setInterval(() => this.cleanupCaches(), CACHE.CLEANUP_INTERVAL_MS);
     }
 
     /**
@@ -732,6 +732,10 @@ export class IssueTreeProvider implements vscode.TreeDataProvider<IssueItem> {
         this.cachedIssues = [];
 
         this._onDidChangeTreeData.dispose();
+
+        if (this.filterStatusBarItem) {
+            this.filterStatusBarItem.dispose();
+        }
     }
 }
 
