@@ -21,6 +21,9 @@ public final class SecurityConstants {
     public static final String AUTH_HEADER_PREFIX = "Bearer ";
     public static final int AUTH_HEADER_PREFIX_LENGTH = 7;
 
+    public static final int MAX_REQUESTS_PER_MINUTE = 10;
+    public static final long WINDOW_SECONDS = 60;
+
     private SecurityConstants() {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
     }

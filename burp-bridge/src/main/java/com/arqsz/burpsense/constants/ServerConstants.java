@@ -1,5 +1,7 @@
 package com.arqsz.burpsense.constants;
 
+import io.undertow.util.HttpString;
+
 /**
  * Constants for HTTP server configuration
  */
@@ -26,6 +28,8 @@ public final class ServerConstants {
     public static final String HTTP_METHODS_ALLOWED = "GET, POST, OPTIONS";
     public static final String HTTP_HEADERS_ALLOWED = "Authorization, Content-Type";
     public static final String CORS_MAX_AGE = "3600";
+    public static final HttpString X_RATE_LIMIT_LIMIT = new HttpString("X-RateLimit-Limit");
+    public static final HttpString X_RATE_LIMIT_REMAINING = new HttpString("X-RateLimit-Remaining");
 
     public static final String HTTP_METHOD_OPTIONS = "OPTIONS";
 
