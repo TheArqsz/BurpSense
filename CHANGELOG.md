@@ -1,3 +1,10 @@
+## [0.2.2](https://github.com/TheArqsz/BurpSense/compare/v0.2.1...v0.2.2) (2026-01-18)
+
+
+### Bug Fixes
+
+* **mapping:** fixed error handling and logging on first launch ([22ac8c4](https://github.com/TheArqsz/BurpSense/commit/22ac8c4da3b63629055185cc2abdbfcd44ccb69c))
+
 ## [0.2.1](https://github.com/TheArqsz/BurpSense/compare/v0.2.0...v0.2.1) (2026-01-18)
 
 
