@@ -16,6 +16,7 @@ import io.undertow.util.StatusCodes;
 public class AuthenticationMiddleware {
 
     private final AuthenticationService authenticationService;
+    @SuppressWarnings("unused")
     private final MontoyaApi api;
 
     public AuthenticationMiddleware(AuthenticationService authenticationService, MontoyaApi api) {

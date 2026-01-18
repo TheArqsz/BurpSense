@@ -38,7 +38,9 @@ public class NetworkConfigPanel {
     private final JButton stopButton;
 
     private final BridgeSettings settings;
+    @SuppressWarnings("unused")
     private Runnable onStartRestart;
+    @SuppressWarnings("unused")
     private Runnable onStop;
 
     public NetworkConfigPanel(BridgeSettings settings) {

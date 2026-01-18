@@ -9,7 +9,6 @@ import java.util.Map;
 import com.arqsz.burpsense.constants.PreferenceConstants;
 import com.arqsz.burpsense.constants.ServerConstants;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.persistence.Preferences;
@@ -21,7 +20,9 @@ public class BridgeSettings {
 
     private final Preferences preferences;
     private final KeyStorage keyStorage;
+    @SuppressWarnings("unused")
     private final Gson gson = new Gson();
+    @SuppressWarnings("unused")
     private final MontoyaApi api;
 
     private Map<String, ApiKey> keyCache = null;
