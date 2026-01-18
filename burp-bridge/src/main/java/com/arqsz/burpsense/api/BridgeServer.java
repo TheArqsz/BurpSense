@@ -1,5 +1,6 @@
 package com.arqsz.burpsense.api;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -120,6 +121,8 @@ public class BridgeServer {
     public void broadcastUpdate() {
         String message = "refresh";
 
+        Set<WebSocketChannel> failedChannels = new HashSet<>();
+
         wsClients.removeIf(channel -> !channel.isOpen());
 
         for (WebSocketChannel channel : wsClients) {
@@ -127,12 +130,19 @@ public class BridgeServer {
                 WebSockets.sendText(message, channel, null);
             } catch (Exception e) {
                 api.logging().logToError("Failed to send WebSocket message: " + e.getMessage());
+                failedChannels.add(channel);
             }
         }
 
         if (!wsClients.isEmpty()) {
             api.logging().logToOutput(
                     String.format("Broadcasted update to %d client(s)", wsClients.size()));
+        }
+
+        if (!failedChannels.isEmpty()) {
+            wsClients.removeAll(failedChannels);
+            api.logging().logToOutput(
+                    "Removed " + failedChannels.size() + " dead WebSocket channels");
         }
     }
 
