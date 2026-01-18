@@ -125,7 +125,7 @@ export class MappingManager {
                 return false;
             }
 
-            if (typeof m.line !== 'number' || m.line < 1 || m.line > 1000000 || !Number.isInteger(m.line)) {
+            if (typeof m.line !== 'number' || m.line < 1 || !Number.isSafeInteger(m.line) || !Number.isInteger(m.line)) {
                 Logger.error(`Mapping ${index}: invalid line ${m.line}`, undefined, 'Mapping');
                 return false;
             }
