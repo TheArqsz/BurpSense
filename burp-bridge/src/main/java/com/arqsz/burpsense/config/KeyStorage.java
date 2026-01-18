@@ -19,38 +19,37 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import burp.api.montoya.MontoyaApi;
-import burp.api.montoya.project.Project;
 
 /**
  * Handles secure encryption and decryption of API keys
  */
 public class KeyStorage {
 
-    private final SecretKey encryptionKey;
+    private final MontoyaApi api;
     private final Gson gson = new Gson();
     private final SecureRandom secureRandom = new SecureRandom();
 
     /**
-     * Initializes key storage with a derived encryption key
+     * Initializes key storage
      * 
      * @param api The Montoya API instance
-     * @throws Exception If key derivation fails
      */
-    public KeyStorage(MontoyaApi api) throws Exception {
-        Project project = api.project();
-        String projectIdentifier = project.id() + "|" + project.name();
-        this.encryptionKey = deriveKey(projectIdentifier);
+    public KeyStorage(MontoyaApi api) {
+        this.api = api;
     }
 
     /**
-     * Derives an encryption key from a password using PBKDF2
+     * Derives an encryption key from Burp Suite installation-specific entropy
      * 
-     * @param password The password to derive from
+     * @param salt The salt to use for key derivation
      * @return A SecretKey suitable for AES encryption
      * @throws Exception If key derivation fails
      */
-    private SecretKey deriveKey(String password) throws Exception {
-        byte[] salt = SecurityConstants.KEY_DERIVATION_SALT.getBytes(StandardCharsets.UTF_8);
+    private SecretKey deriveKey(byte[] salt) throws Exception {
+        String projectInfo = api.project().id() + "|" + api.project().name();
+        String systemEntropy = System.getProperty("user.name", "default");
+
+        String password = projectInfo + "|" + systemEntropy;
 
         KeySpec spec = new PBEKeySpec(
                 password.toCharArray(),
@@ -65,18 +64,25 @@ public class KeyStorage {
     }
 
     /**
-     * Encrypts a list of API keys
+     * Encrypts a list of API keys with unique salt per operation
+     * 
+     * Format: [salt(16 bytes)][iv(12 bytes)][ciphertext][tag]
      * 
      * @param keys The keys to encrypt
-     * @return Base64-encoded encrypted data
+     * @return Base64-encoded encrypted data with embedded salt
      * @throws Exception If encryption fails
      */
     public String encryptKeys(List<ApiKey> keys) throws Exception {
         String json = gson.toJson(keys);
         byte[] plaintext = json.getBytes(StandardCharsets.UTF_8);
 
+        byte[] salt = new byte[SecurityConstants.SALT_LENGTH_BYTES];
+        secureRandom.nextBytes(salt);
+
         byte[] iv = new byte[SecurityConstants.GCM_IV_LENGTH_BYTES];
         secureRandom.nextBytes(iv);
+
+        SecretKey encryptionKey = deriveKey(salt);
 
         Cipher cipher = Cipher.getInstance(SecurityConstants.ENCRYPTION_ALGORITHM);
         GCMParameterSpec parameterSpec = new GCMParameterSpec(
@@ -86,7 +92,8 @@ public class KeyStorage {
 
         byte[] ciphertext = cipher.doFinal(plaintext);
 
-        ByteBuffer byteBuffer = ByteBuffer.allocate(iv.length + ciphertext.length);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(salt.length + iv.length + ciphertext.length);
+        byteBuffer.put(salt);
         byteBuffer.put(iv);
         byteBuffer.put(ciphertext);
 
@@ -94,9 +101,9 @@ public class KeyStorage {
     }
 
     /**
-     * Decrypts a list of API keys
+     * Decrypts a list of API keys, extracting salt from encrypted data
      * 
-     * @param encrypted Base64-encoded encrypted data
+     * @param encrypted Base64-encoded encrypted data with embedded salt
      * @return The decrypted list of API keys
      * @throws Exception If decryption fails
      */
@@ -104,11 +111,17 @@ public class KeyStorage {
         byte[] decoded = Base64.getDecoder().decode(encrypted);
 
         ByteBuffer byteBuffer = ByteBuffer.wrap(decoded);
+
+        byte[] salt = new byte[SecurityConstants.SALT_LENGTH_BYTES];
+        byteBuffer.get(salt);
+
         byte[] iv = new byte[SecurityConstants.GCM_IV_LENGTH_BYTES];
         byteBuffer.get(iv);
 
         byte[] ciphertext = new byte[byteBuffer.remaining()];
         byteBuffer.get(ciphertext);
+
+        SecretKey encryptionKey = deriveKey(salt);
 
         Cipher cipher = Cipher.getInstance(SecurityConstants.ENCRYPTION_ALGORITHM);
         GCMParameterSpec parameterSpec = new GCMParameterSpec(
