@@ -1,6 +1,5 @@
 package com.arqsz.burpsense.api.middleware;
 
-import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -97,7 +96,7 @@ public class RateLimiter {
             this.capacity = capacity;
             this.windowMillis = windowMillis;
             this.tokens = capacity;
-            this.lastRefillTime = Instant.now().getEpochSecond();
+            this.lastRefillTime = System.currentTimeMillis();
             this.lastAccessTime = lastRefillTime;
         }
 
@@ -118,7 +117,7 @@ public class RateLimiter {
         }
 
         public synchronized long getSecondsUntilReset() {
-            long now = Instant.now().getEpochSecond();
+            long now = System.currentTimeMillis();
             long elapsed = now - lastRefillTime;
             return Math.max(0, (windowMillis - elapsed) / 1000);
         }
