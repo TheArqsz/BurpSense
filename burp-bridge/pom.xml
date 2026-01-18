@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.arqsz</groupId>
     <artifactId>burpsense-bridge</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.1</version>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>

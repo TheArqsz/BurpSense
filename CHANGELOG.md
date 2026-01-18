@@ -1,3 +1,10 @@
+## [0.2.1](https://github.com/TheArqsz/BurpSense/compare/v0.2.0...v0.2.1) (2026-01-18)
+
+
+### Bug Fixes
+
+* **reconnection:** increased reconnection base time to avoid frequent notification spam ([b699b80](https://github.com/TheArqsz/BurpSense/commit/b699b800621c5f09e46cd693012543d1e0e1b9dc))
+
 ## [0.2.0](https://github.com/TheArqsz/BurpSense/compare/v0.1.0...v0.2.0) (2026-01-18)
 
 

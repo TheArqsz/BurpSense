@@ -2,7 +2,7 @@
   "name": "burpsense",
   "displayName": "BurpSense",
   "description": "Integrate Burp Suite security findings directly into VS Code",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "arqsz",
   "engines": {
     "vscode": "^1.108.1"
