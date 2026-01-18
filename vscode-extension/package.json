@@ -317,6 +317,7 @@
     ]
   },
   "scripts": {
+    "vscode:prepublish": "npm run compile",
     "compile": "npx tsc -p ./",
     "watch": "npx tsc -watch -p ./",
     "lint": "eslint \"src/**/*.ts\"",
