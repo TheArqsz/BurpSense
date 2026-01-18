@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CONFIDENCE_LEVELS, CONFIG_KEYS, CONFIG_SECTION, CONTEXT_KEYS, SEVERITY_LEVELS, SEVERITY_WEIGHTS } from '../constants';
+import { CONFIDENCE_LEVELS, CONFIG_KEYS, CONTEXT_KEYS, SEVERITY_LEVELS, SEVERITY_WEIGHTS } from '../constants';
 import { IssueTreeProvider } from '../providers/IssueTreeProvider';
 import { ConnectionManager } from '../services/ConnectionManager';
 import { FilterPreset } from '../types';

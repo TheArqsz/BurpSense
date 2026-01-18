@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { BUTTONS, CONFIG_KEYS, CONFIG_SECTION, LIMITS, MESSAGES, STORAGE_KEYS, UI_LABELS } from '../constants';
+import { BUTTONS, CONFIG_KEYS, LIMITS, MESSAGES, STORAGE_KEYS, UI_LABELS } from '../constants';
 import { IssueTreeProvider } from '../providers/IssueTreeProvider';
 import { ConnectionManager } from '../services/ConnectionManager';
 import { DiagnosticProvider } from '../services/DiagnosticProvider';

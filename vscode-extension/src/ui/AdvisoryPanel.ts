@@ -12,7 +12,7 @@ export class AdvisoryPanel {
     private _disposables: vscode.Disposable[] = [];
     private _currentIssue: BurpIssue;
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, issue: BurpIssue) {
+    private constructor(panel: vscode.WebviewPanel, issue: BurpIssue) {
         this._panel = panel;
         this._currentIssue = issue;
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
@@ -32,7 +32,7 @@ export class AdvisoryPanel {
 
         if (AdvisoryPanel.currentPanel) {
             AdvisoryPanel.currentPanel._panel.reveal(column);
-            AdvisoryPanel.currentPanel.update(issue, extensionUri);
+            AdvisoryPanel.currentPanel.update(issue);
             return;
         }
 
@@ -47,7 +47,7 @@ export class AdvisoryPanel {
             }
         );
 
-        AdvisoryPanel.currentPanel = new AdvisoryPanel(panel, extensionUri, issue);
+        AdvisoryPanel.currentPanel = new AdvisoryPanel(panel, issue);
     }
 
     /**
@@ -56,7 +56,7 @@ export class AdvisoryPanel {
      * @param issue - New issue to display
      * @param extensionUri - Extension root URI
      */
-    public update(issue: BurpIssue, extensionUri: vscode.Uri) {
+    public update(issue: BurpIssue) {
         this._currentIssue = issue;
         this._panel.title = `Advisory: ${issue.name}`;
 

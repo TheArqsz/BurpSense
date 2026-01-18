@@ -4,7 +4,7 @@ import { ConnectionCommands } from './commands/ConnectionCommands';
 import { FilterCommands } from './commands/FilterCommands';
 import { IssueCommands } from './commands/IssueCommands';
 import { MappingCommands } from './commands/MappingCommands';
-import { COMMANDS, CONFIG_KEYS, CONFIG_SECTION, CONTEXT_KEYS, STORAGE_KEYS, TIMING, TREE_VIEW } from './constants';
+import { COMMANDS, CONFIG_KEYS, CONTEXT_KEYS, STORAGE_KEYS, TIMING, TREE_VIEW } from './constants';
 import { BurpCodeActionProvider } from './providers/CodeActionProvider';
 import { IssueTreeProvider } from './providers/IssueTreeProvider';
 import { ConnectionManager } from './services/ConnectionManager';
