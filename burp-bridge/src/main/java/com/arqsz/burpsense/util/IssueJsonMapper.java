@@ -1,6 +1,7 @@
 package com.arqsz.burpsense.util;
 
 import java.util.Base64;
+import java.util.Objects;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -27,10 +28,11 @@ public class IssueJsonMapper {
         json.addProperty("severity", issue.severity().name());
         json.addProperty("confidence", issue.confidence().name());
         json.addProperty("baseUrl", issue.baseUrl());
-        json.addProperty("detail", issue.detail());
-        json.addProperty("remediation", issue.remediation());
 
-        if (issue.definition() != null) {
+        json.addProperty("detail", Objects.toString(issue.detail(), ""));
+        json.addProperty("remediation", Objects.toString(issue.remediation(), ""));
+
+        if (issue.definition() != null && issue.definition().background() != null) {
             json.addProperty("background", issue.definition().background());
         }
 
