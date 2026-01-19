@@ -1,5 +1,7 @@
 package com.arqsz.burpsense.config;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -94,10 +96,25 @@ public class BridgeSettings {
      * @return The API key, or null if not found
      */
     public ApiKey findKeyByToken(String token) {
+        if (token == null) {
+            return null;
+        }
+
         if (isCacheStale()) {
             rebuildCache();
         }
-        return keyCache.get(token);
+        byte[] tokenBytes = token.getBytes(StandardCharsets.UTF_8);
+
+        for (Map.Entry<String, ApiKey> entry : keyCache.entrySet()) {
+            ApiKey key = entry.getValue();
+            byte[] keyTokenBytes = key.token().getBytes(StandardCharsets.UTF_8);
+
+            if (MessageDigest.isEqual(keyTokenBytes, tokenBytes)) {
+                return key;
+            }
+        }
+
+        return null;
     }
 
     /**
