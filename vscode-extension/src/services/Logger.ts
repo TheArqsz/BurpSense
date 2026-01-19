@@ -46,8 +46,46 @@ export class Logger {
      * @param category - Subsystem
      */
     public static error(message: string, error?: any, category: string = 'General'): void {
-        const detail = error instanceof Error ? error.stack : String(error);
-        this.log('ERROR', `${message}${error ? ` - ${detail}` : ''}`, category);
+        let detail = '';
+
+        if (error) {
+            if (error.name === 'AbortError') {
+                detail = 'Request timed out';
+            } else if (error.code === 'ECONNREFUSED') {
+                detail = 'Connection refused (bridge not running?)';
+            } else if (error.code === 'ENOTFOUND') {
+                detail = 'Host not found (check IP/hostname)';
+            } else if (error instanceof Error) {
+                const stack = this.sanitizeStackTrace(error.stack || '');
+                detail = `${error.name}: ${error.message}\n${stack}`;
+            } else {
+                detail = String(error);
+            }
+        }
+
+        this.log('ERROR', `${message}${detail ? `\n  ${detail}` : ''}`, category);
+    }
+
+    /**
+     * Removes internal Node.js and VS Code frames from stack traces.
+     * Shows only the first 3 application-relevant frames.
+     */
+    private static sanitizeStackTrace(stack: string): string {
+        const lines = stack.split('\n');
+        const relevantFrames = lines
+            .slice(1)
+            .filter(line => {
+                if (line.includes('node:internal/')) return false;
+                if (line.includes('node_modules')) return false;
+                if (line.includes('.vscode-server/bin/')) return false;
+                if (line.includes('extensionHostProcess.js')) return false;
+                return line.trim().startsWith('at ');
+            })
+            .slice(0, 3);
+
+        return relevantFrames.length > 0
+            ? relevantFrames.join('\n  ')
+            : '';
     }
 
     /**
