@@ -1,3 +1,12 @@
+## [1.0.2](https://github.com/TheArqsz/BurpSense/compare/v1.0.1...v1.0.2) (2026-01-19)
+
+
+### Bug Fixes
+
+* **connection:** downgrade expected errors from ERROR to WARN level ([4eb56a3](https://github.com/TheArqsz/BurpSense/commit/4eb56a3a6e9bb63a565e48f97bd670ddbba78223))
+* **logger:** sanitize error stack traces and add formatting ([84aab2c](https://github.com/TheArqsz/BurpSense/commit/84aab2cc431292d52bbe28eeb5fed562e300c84a))
+* **ui:** sanitize error messages shown to users ([aee6f11](https://github.com/TheArqsz/BurpSense/commit/aee6f11d9f5a49aa0ec076cb794d324584b7b5bb))
+
 ## [1.0.1](https://github.com/TheArqsz/BurpSense/compare/v1.0.0...v1.0.1) (2026-01-19)
 
 
