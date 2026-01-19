@@ -1,3 +1,4 @@
+import DOMPurify from 'isomorphic-dompurify';
 import * as vscode from 'vscode';
 import { BurpIssue } from '../types';
 
@@ -231,7 +232,7 @@ export class AdvisoryPanel {
         <div class="meta">
             <span class="severity severity-${issue.severity}">${issue.severity}</span>
             <span class="badge">Confidence: ${issue.confidence}</span>
-            <a href="${this.escapeHtml(issue.baseUrl)}" class="url">${this.escapeHtml(issue.baseUrl)}</a>
+            <a href="${this.sanitizeUrl(issue.baseUrl)}" class="url">${this.escapeHtml(issue.baseUrl)}</a>
         </div>
     </div>
     
@@ -244,18 +245,18 @@ export class AdvisoryPanel {
     <div id="details" class="tab-content active">
         <div class="section">
             <h2>Issue Detail</h2>
-            <div class="section-content">${issue.detail || "No details provided."}</div>
+            <div class="section-content">${this.sanitizeHtml(issue.detail || "No details provided.")}</div>
         </div>
         
         <div class="section">
             <h2>Remediation</h2>
-            <div class="section-content">${issue.remediation || "No remediation guidance available."}</div>
+            <div class="section-content">${this.sanitizeHtml(issue.remediation || "No remediation guidance available.")}</div>
         </div>
         
         ${issue.background ? `
         <div class="section">
             <h2>Background</h2>
-            <div class="section-content">${issue.background}</div>
+            <div class="section-content">${this.sanitizeHtml(issue.background || "")}</div>
         </div>` : ''}
     </div>
     
@@ -343,5 +344,49 @@ export class AdvisoryPanel {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    /**
+     * Sanitizes HTML content to allow safe formatting tags.
+     * Allows: p, strong, em, code, pre, ul, ol, li, br, a (with safe URLs)
+     * Blocks: script, iframe, object, embed, style, event handlers
+     */
+    private sanitizeHtml(html: string | undefined): string {
+        if (!html) {
+            return '';
+        }
+
+        const clean = DOMPurify.sanitize(html, {
+            ALLOWED_TAGS: [
+                'p', 'br', 'strong', 'b', 'em', 'i', 'u',
+                'code', 'pre', 'ul', 'ol', 'li', 'blockquote',
+                'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'a', 'span', 'div'
+            ],
+            ALLOWED_ATTR: ['href', 'class'],
+            ALLOWED_URI_REGEXP: /^https?:\/\//i,
+            KEEP_CONTENT: true,
+            RETURN_TRUSTED_TYPE: false
+        });
+
+        return clean;
+    }
+
+    /**
+     * Sanitizes URLs
+     * Only allows http:// and https:// schemes
+     */
+    private sanitizeUrl(url: string | undefined): string {
+        if (!url) {
+            return '#';
+        }
+
+        const trimmed = url.trim().toLowerCase();
+
+        if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+            return this.escapeHtml(url);
+        }
+
+        return '#';
     }
 }

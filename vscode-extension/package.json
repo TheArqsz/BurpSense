@@ -355,11 +355,13 @@
     "web security"
   ],
   "dependencies": {
+    "isomorphic-dompurify": "^2.35.0",
     "typescript": "^5.9.3",
     "ws": "^8.19.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@types/dompurify": "^3.0.5",
     "@types/node": "^25.0.8",
     "@types/vscode": "^1.108.1",
     "@types/ws": "^8.18.1",
