@@ -37,7 +37,9 @@ public class SingleIssueHandler implements HttpHandler {
         }
 
         PathTemplateMatch pathMatch = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
-        String issueId = pathMatch != null ? pathMatch.getParameters().get("id") : null;
+        String issueId = (pathMatch != null && pathMatch.getParameters() != null)
+                ? pathMatch.getParameters().get("id")
+                : null;
 
         if (issueId == null || issueId.isEmpty()) {
             exchange.setStatusCode(400);
