@@ -12,6 +12,9 @@ on:
 jobs:
   bridge-tests:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./burp-bridge
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -33,11 +36,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
-          path: target/site/jacoco/
+          path: burp-bridge/target/site/jacoco/
 
   extension-tests:
     needs: bridge-tests
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./vscode-extension
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -51,17 +57,15 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          cd vscode-extension
           # npm ci
 
       - name: Placeholder for Run Extension Tests
         run: |
           echo "Running VS Code Extension tests..."
-          # cd vscode-extension && npm test
+          # npm test
           # Note: On Linux, you usually need 'xvfb-run' for VS Code tests
           # example: xvfb-run -a npm test
         
       - name: Extension Linting
         run: |
-          cd vscode-extension
           npm run lint
