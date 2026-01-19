@@ -2,9 +2,12 @@ name: Build and Publish Release
 
 on:
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: ["BurpSense Testing"]
+    types:
+      - completed
     branches:
-      - 'main'
+      - main
 
 jobs:
   release-and-publish:
@@ -103,7 +106,7 @@ jobs:
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         run: |
           cd burp-bridge
-          mvn clean package -DskipTests -B
+          mvn clean package -DskipTests -DskipUnitTests -B
 
       - name: Verify JAR Build
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
