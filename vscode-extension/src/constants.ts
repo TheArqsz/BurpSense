@@ -47,7 +47,15 @@ export const CONFIG_KEYS = {
     SHOW_DRIFT_NOTIFICATIONS: `${CONFIG_SECTION}.showDriftNotifications`,
     CONFIRM_MAPPING_DELETION: `${CONFIG_SECTION}.confirmMappingDeletion`,
     AUTO_CLEAN_ORPHANED_MAPPINGS: `${CONFIG_SECTION}.autoCleanOrphanedMappings`,
+    LOG_LEVEL: `${CONFIG_SECTION}.logLevel`,
 } as const;
+
+export enum LogLevel {
+    ERROR = 0,
+    WARN = 1,
+    INFO = 2,
+    DEBUG = 3
+}
 
 /**
  * Bridge server connection settings.

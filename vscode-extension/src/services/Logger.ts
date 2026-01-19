@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { EXTENSION_NAME } from '../constants';
+import { EXTENSION_NAME, CONFIG_KEYS, LogLevel } from '../constants';
 
 /**
  * Centralized logging to VS Code output channel.
@@ -7,14 +7,52 @@ import { EXTENSION_NAME } from '../constants';
  */
 export class Logger {
     private static channel: vscode.OutputChannel;
+    private static currentLevel: LogLevel = LogLevel.INFO;
 
     /**
      * Creates output channel.
-     * Call once during extension activation.
      */
     public static initialize(): void {
         if (!this.channel) {
             this.channel = vscode.window.createOutputChannel(EXTENSION_NAME);
+            this.updateLogLevel();
+        }
+    }
+
+    /**
+     * Updates log level from configuration.
+     */
+    public static updateLogLevel(): void {
+        const config = vscode.workspace.getConfiguration();
+        const levelStr = config.get<string>(CONFIG_KEYS.LOG_LEVEL, 'warn');
+
+        switch (levelStr.toLowerCase()) {
+            case 'error':
+                this.currentLevel = LogLevel.ERROR;
+                break;
+            case 'warn':
+                this.currentLevel = LogLevel.WARN;
+                break;
+            case 'info':
+                this.currentLevel = LogLevel.INFO;
+                break;
+            case 'debug':
+                this.currentLevel = LogLevel.DEBUG;
+                break;
+            default:
+                this.currentLevel = LogLevel.WARN;
+        }
+    }
+
+    /**
+     * Logs debug message.
+     * 
+     * @param message - Message text
+     * @param category - Subsystem (Connection, Mapping, etc.)
+     */
+    public static debug(message: string, category: string = 'General'): void {
+        if (this.currentLevel >= LogLevel.DEBUG) {
+            this.log('DEBUG', message, category);
         }
     }
 
@@ -25,7 +63,9 @@ export class Logger {
      * @param category - Subsystem (Connection, Mapping, etc.)
      */
     public static info(message: string, category: string = 'General'): void {
-        this.log('INFO', message, category);
+        if (this.currentLevel >= LogLevel.INFO) {
+            this.log('INFO', message, category);
+        }
     }
 
     /**
@@ -35,7 +75,9 @@ export class Logger {
      * @param category - Subsystem
      */
     public static warn(message: string, category: string = 'General'): void {
-        this.log('WARN', message, category);
+        if (this.currentLevel >= LogLevel.WARN) {
+            this.log('WARN', message, category);
+        }
     }
 
     /**
@@ -46,24 +88,26 @@ export class Logger {
      * @param category - Subsystem
      */
     public static error(message: string, error?: any, category: string = 'General'): void {
-        let detail = '';
+        if (this.currentLevel >= LogLevel.ERROR) {
+            let detail = '';
 
-        if (error) {
-            if (error.name === 'AbortError') {
-                detail = 'Request timed out';
-            } else if (error.code === 'ECONNREFUSED') {
-                detail = 'Connection refused (bridge not running?)';
-            } else if (error.code === 'ENOTFOUND') {
-                detail = 'Host not found (check IP/hostname)';
-            } else if (error instanceof Error) {
-                const stack = this.sanitizeStackTrace(error.stack || '');
-                detail = `${error.name}: ${error.message}\n${stack}`;
-            } else {
-                detail = String(error);
+            if (error) {
+                if (error.name === 'AbortError') {
+                    detail = 'Request timed out';
+                } else if (error.code === 'ECONNREFUSED') {
+                    detail = 'Connection refused (bridge not running?)';
+                } else if (error.code === 'ENOTFOUND') {
+                    detail = 'Host not found (check IP/hostname)';
+                } else if (error instanceof Error) {
+                    const stack = this.sanitizeStackTrace(error.stack || '');
+                    detail = `${error.name}: ${error.message}\n${stack}`;
+                } else {
+                    detail = String(error);
+                }
             }
-        }
 
-        this.log('ERROR', `${message}${detail ? `\n  ${detail}` : ''}`, category);
+            this.log('ERROR', `${message}${detail ? `\n\tReason: ${detail}` : ''}`, category);
+        }
     }
 
     /**

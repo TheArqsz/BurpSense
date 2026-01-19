@@ -69,6 +69,17 @@
           "type": "boolean",
           "default": false,
           "description": "Automatically remove mappings when their associated files are deleted."
+        },
+        "burpsense.logLevel": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warn",
+            "info",
+            "debug"
+          ],
+          "default": "info",
+          "description": "Logging verbosity level. 'error' shows only critical issues, 'debug' shows everything."
         }
       }
     },

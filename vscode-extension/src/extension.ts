@@ -23,6 +23,15 @@ import { WelcomePanel } from './ui/WelcomePanel';
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     Logger.initialize();
     Logger.info('BurpSense extension activating...', 'Lifecycle');
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration('burpsense.logLevel')) {
+                Logger.updateLogLevel();
+                Logger.info('Log level updated', 'Config');
+            }
+        })
+    );
+
     const connectionManager = new ConnectionManager(context);
     const mappingManager = new MappingManager();
     const smartSuggestionService = new SmartSuggestionService();
