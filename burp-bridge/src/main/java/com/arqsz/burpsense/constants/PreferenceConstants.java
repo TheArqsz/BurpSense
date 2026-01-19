@@ -13,7 +13,7 @@ public final class PreferenceConstants {
 
     public static final long CACHE_TTL_MS = 60000;
 
-    public static final String DATETIME_FORMAT = "yyyy-MM-dd HH:mm";
+    public static final String DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     private PreferenceConstants() {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
