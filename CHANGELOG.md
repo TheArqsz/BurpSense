@@ -1,3 +1,23 @@
+## [1.0.1](https://github.com/TheArqsz/BurpSense/compare/v1.0.0...v1.0.1) (2026-01-19)
+
+
+### Bug Fixes
+
+* **bridge:** fixed wrong middleware handling order ([4ecd289](https://github.com/TheArqsz/BurpSense/commit/4ecd28991cfd93a9fdb4199670b11ec04e72af9a))
+* **bridge:** improved websocket cleanup ([1d7b4f3](https://github.com/TheArqsz/BurpSense/commit/1d7b4f33d6f7899011a1f6d3c65c883d2a5551f7))
+* **bridge:** prevent NPE in SingleIssueHandler when path parameters map is null ([3440fb7](https://github.com/TheArqsz/BurpSense/commit/3440fb705dc4548f3ddba76615276a90508ffb35))
+* **constants:** fix datetime precision ([381726f](https://github.com/TheArqsz/BurpSense/commit/381726ff8e74dce82dbb87d385d2db645987b554))
+* **rateLimiter:** fixed units (getEpochSecond -> currentTmeMillis) ([b996470](https://github.com/TheArqsz/BurpSense/commit/b996470a998982c5496070d0ca9793b736ebb239))
+* **regexValidator:** added single ExecutorService to lower number of created threads per verification ([3761971](https://github.com/TheArqsz/BurpSense/commit/37619713eaf5cd876769dd7a94692a71810b1551))
+* update release job conditions in release.yml ([4b4b0b4](https://github.com/TheArqsz/BurpSense/commit/4b4b0b4beeb863e6dae95b351ba4ed43116ca061))
+* **workflow:** added npm ci to extension workflow ([ae81214](https://github.com/TheArqsz/BurpSense/commit/ae812145596a02b21a698d0be4420a44dca0b189))
+* **workflow:** added working-directory param to workflows ([880e7b2](https://github.com/TheArqsz/BurpSense/commit/880e7b2c941b7ca9268c45a3db61e0209e284c69))
+
+
+### Reverts
+
+* **IssueJsonMapper:** reverted addIfNotNull change ([0b2847e](https://github.com/TheArqsz/BurpSense/commit/0b2847eee9e6ecb64032a58f5a9b92f740fee57a))
+
 ## [1.0.0](https://github.com/TheArqsz/BurpSense/compare/v0.2.3...v1.0.0) (2026-01-18)
 
 
