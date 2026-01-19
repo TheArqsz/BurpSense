@@ -139,6 +139,26 @@ class BridgeSettingsTest {
 
             assertThat(keys).isEmpty();
         }
+
+        @Test
+        @DisplayName("should return null for null token")
+        void shouldReturnNullForNullToken() {
+            ApiKey found = settings.findKeyByToken(null);
+
+            assertThat(found).isNull();
+        }
+
+        @Test
+        @DisplayName("should handle null token with existing keys")
+        void shouldHandleNullTokenWithExistingKeys() {
+            ApiKey key = ApiKey.create("TestKey");
+            settings.addKey(key);
+
+            ApiKey found = settings.findKeyByToken(null);
+
+            assertThat(found).isNull();
+            assertThat(settings.findKeyByToken(key.token())).isNotNull();
+        }
     }
 
     @Nested
@@ -306,6 +326,60 @@ class BridgeSettingsTest {
 
             assertThat(settings.findKeyByToken(key1.token())).isNull();
             assertThat(settings.findKeyByToken(key2.token())).isNotNull();
+        }
+
+        @Test
+        @DisplayName("should rebuild cache when preferences are modified externally")
+        void shouldRebuildCacheWhenPreferencesModifiedExternally() {
+            ApiKey key1 = ApiKey.create("Key1");
+            settings.addKey(key1);
+
+            assertThat(settings.findKeyByToken(key1.token())).isNotNull();
+
+            BridgeSettings newSettingsInstance = new BridgeSettings(prefs, api);
+
+            ApiKey foundInNewInstance = newSettingsInstance.findKeyByToken(key1.token());
+
+            assertThat(foundInNewInstance).isNotNull();
+            assertThat(foundInNewInstance.name()).isEqualTo("Key1");
+        }
+
+        @Test
+        @DisplayName("should rebuild cache after updateLastUsed")
+        void shouldRebuildCacheAfterUpdateLastUsed() {
+            ApiKey key = ApiKey.create("TestKey");
+            settings.addKey(key);
+
+            ApiKey found1 = settings.findKeyByToken(key.token());
+            assertThat(found1.lastUsed()).isNull();
+
+            settings.updateLastUsed(key.token());
+
+            ApiKey found2 = settings.findKeyByToken(key.token());
+            assertThat(found2.lastUsed()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("should use cached token lookup for repeated access")
+        void shouldUseCachedTokenLookupForRepeatedAccess() {
+            ApiKey key1 = ApiKey.create("Key1");
+            ApiKey key2 = ApiKey.create("Key2");
+            ApiKey key3 = ApiKey.create("Key3");
+
+            settings.addKey(key1);
+            settings.addKey(key2);
+            settings.addKey(key3);
+
+            for (int i = 0; i < 10; i++) {
+                assertThat(settings.findKeyByToken(key1.token())).isNotNull();
+                assertThat(settings.findKeyByToken(key2.token())).isNotNull();
+                assertThat(settings.findKeyByToken(key3.token())).isNotNull();
+                assertThat(settings.findKeyByToken("nonexistent")).isNull();
+            }
+
+            assertThat(settings.findKeyByToken(key1.token()).name()).isEqualTo("Key1");
+            assertThat(settings.findKeyByToken(key2.token()).name()).isEqualTo("Key2");
+            assertThat(settings.findKeyByToken(key3.token()).name()).isEqualTo("Key3");
         }
     }
 }
