@@ -475,13 +475,12 @@ export class ConnectionManager {
             }
         } catch (error: any) {
             if (error.name === 'AbortError') {
-                Logger.error('Issue fetch timed out', undefined, 'Connection');
+                Logger.warn('Issue fetch timed out', 'Connection');
                 vscode.window.showWarningMessage('BurpSense: Request to the bridge timed out');
+            } else if (error.code === 'ECONNREFUSED') {
+                Logger.warn('Connection refused when fetching issues (bridge not running?)', 'Connection');
             } else {
                 Logger.error("Failed to fetch issues", error, 'Connection');
-                if (error instanceof Error && error.message.includes('ECONNREFUSED')) {
-                    Logger.info('Connection refused when fetching issues', 'Connection');
-                }
             }
         } finally {
             clearTimeout(timeout);
@@ -595,7 +594,9 @@ export class ConnectionManager {
             }
         } catch (error: any) {
             if (error.name === 'AbortError') {
-                Logger.error('Single issue fetch timed out', undefined, 'Connection');
+                Logger.warn('Single issue fetch timed out', 'Connection');
+            } else if (error.code === 'ECONNREFUSED') {
+                Logger.warn('Connection refused when fetching single issue', 'Connection');
             } else {
                 Logger.error('Failed to fetch single issue', error, 'Connection');
             }
