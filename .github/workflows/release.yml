@@ -12,7 +12,6 @@ on:
 jobs:
   release-and-publish:
     name: Release and Publish
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: ubuntu-latest
 
     permissions:
