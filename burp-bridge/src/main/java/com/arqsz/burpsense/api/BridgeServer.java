@@ -36,7 +36,7 @@ public class BridgeServer {
     private final AuthenticationService authenticationService;
 
     private Undertow server;
-    private boolean running = false;
+    private volatile boolean running = false;
 
     private final Set<WebSocketChannel> wsClients = ConcurrentHashMap.newKeySet();
     private int lastIssueCount = 0;
@@ -128,7 +128,7 @@ public class BridgeServer {
 
         for (WebSocketChannel channel : wsClients) {
             try {
-                WebSockets.sendText(message, channel, null);
+                sendWebSocketText(channel, message);
             } catch (Exception e) {
                 api.logging().logToError("Failed to send WebSocket message: " + e.getMessage());
                 failedChannels.add(channel);
@@ -145,6 +145,10 @@ public class BridgeServer {
             api.logging().logToOutput(
                     "Removed " + failedChannels.size() + " dead WebSocket channels");
         }
+    }
+
+    protected void sendWebSocketText(WebSocketChannel channel, String message) {
+        WebSockets.sendText(message, channel, null);
     }
 
     /**
