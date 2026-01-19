@@ -57,7 +57,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          # npm ci
+          npm ci
 
       - name: Placeholder for Run Extension Tests
         run: |
