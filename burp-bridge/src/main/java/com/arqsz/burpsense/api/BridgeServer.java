@@ -1,9 +1,12 @@
 package com.arqsz.burpsense.api;
 
+import static io.undertow.Handlers.websocket;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.arqsz.burpsense.api.handler.HealthHandler;
 import com.arqsz.burpsense.api.handler.IssuesHandler;
@@ -21,9 +24,9 @@ import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.RoutingHandler;
+import io.undertow.websockets.core.WebSocketCallback;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
-import static io.undertow.Handlers.websocket;
 
 /**
  * HTTP server providing the bridge API
@@ -39,7 +42,7 @@ public class BridgeServer {
     private volatile boolean running = false;
 
     private final Set<WebSocketChannel> wsClients = ConcurrentHashMap.newKeySet();
-    private int lastIssueCount = 0;
+    private AtomicInteger lastIssueCount = new AtomicInteger(0);
 
     public BridgeServer(MontoyaApi api, BridgeSettings settings) {
         this.api = api;
@@ -148,7 +151,17 @@ public class BridgeServer {
     }
 
     protected void sendWebSocketText(WebSocketChannel channel, String message) {
-        WebSockets.sendText(message, channel, null);
+        WebSockets.sendText(message, channel, new WebSocketCallback<Void>() {
+            @Override
+            public void complete(WebSocketChannel channel, Void context) {
+            }
+
+            @Override
+            public void onError(WebSocketChannel channel, Void context, Throwable throwable) {
+                api.logging().logToError("WebSocket send failed, removing client: " + throwable.getMessage());
+                wsClients.remove(channel);
+            }
+        });
     }
 
     /**
@@ -162,13 +175,17 @@ public class BridgeServer {
 
         List<AuditIssue> currentIssues = getIssues();
         int currentCount = currentIssues.size();
+        int oldCount = lastIssueCount.getAndSet(currentCount);
 
-        if (currentCount != lastIssueCount) {
+        if (oldCount != currentCount) {
             api.logging().logToOutput(
-                    String.format("Issue count changed: %d -> %d", lastIssueCount, currentCount));
-            lastIssueCount = currentCount;
+                    String.format("Issue count changed: %d -> %d", oldCount, currentCount));
             broadcastUpdate();
         }
+    }
+
+    public void resetMonitoringState() {
+        lastIssueCount.set(0);
     }
 
     /**
