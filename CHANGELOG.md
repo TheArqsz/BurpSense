@@ -1,3 +1,11 @@
+## [1.0.3](https://github.com/TheArqsz/BurpSense/compare/v1.0.2...v1.0.3) (2026-01-19)
+
+
+### Bug Fixes
+
+* **security:** sanitize HTML content in issue advisory panel ([9e547b9](https://github.com/TheArqsz/BurpSense/commit/9e547b9b8f0561b1c5e991d54f772ba1c69efb41))
+* **security:** use constant-time comparison for API token validation ([4e6da56](https://github.com/TheArqsz/BurpSense/commit/4e6da56ce1d2ad6e7ce39b593930fe3ecca0a4bd))
+
 ## [1.0.2](https://github.com/TheArqsz/BurpSense/compare/v1.0.1...v1.0.2) (2026-01-19)
 
 
