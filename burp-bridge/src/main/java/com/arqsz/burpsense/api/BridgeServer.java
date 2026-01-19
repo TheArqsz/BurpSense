@@ -27,6 +27,7 @@ import io.undertow.server.RoutingHandler;
 import io.undertow.websockets.core.WebSocketCallback;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
+import io.undertow.websockets.spi.WebSocketHttpExchange;
 
 /**
  * HTTP server providing the bridge API
@@ -199,19 +200,21 @@ public class BridgeServer {
                 .get(ServerConstants.ENDPOINT_ISSUES, new IssuesHandler(this))
                 .post(ServerConstants.ENDPOINT_ISSUES, new IssuesHandler(this))
                 .get(ServerConstants.ENDPOINT_ISSUE_BY_ID, new SingleIssueHandler(this))
-                .get(ServerConstants.ENDPOINT_WS, websocket((exchange, channel) -> {
-                    wsClients.add(channel);
+                .get(ServerConstants.ENDPOINT_WS, websocket(this::handleWebSocketConnection));
+    }
 
-                    api.logging().logToOutput(
-                            String.format("WebSocket client connected (total: %d)", wsClients.size()));
+    private void handleWebSocketConnection(WebSocketHttpExchange exchange, WebSocketChannel channel) {
+        wsClients.add(channel);
 
-                    channel.addCloseTask(c -> {
-                        wsClients.remove(c);
-                        api.logging().logToOutput(
-                                String.format("WebSocket client disconnected (total: %d)", wsClients.size()));
-                    });
+        api.logging().logToOutput(
+                String.format("WebSocket client connected (total: %d)", wsClients.size()));
 
-                    channel.resumeReceives();
-                }));
+        channel.addCloseTask(c -> {
+            wsClients.remove(c);
+            api.logging().logToOutput(
+                    String.format("WebSocket client disconnected (total: %d)", wsClients.size()));
+        });
+
+        channel.resumeReceives();
     }
 }
