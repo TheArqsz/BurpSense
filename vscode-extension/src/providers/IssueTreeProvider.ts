@@ -97,9 +97,8 @@ export class IssueTreeProvider implements vscode.TreeDataProvider<IssueItem> {
                     break;
 
                 case ConnectionEventType.ConnectionError:
-                    Logger.error(
-                        'Connection error received via event',
-                        event.data.error,
+                    Logger.info(
+                        `Connection error event: ${event.data.error.name || 'Unknown'}`,
                         'Events'
                     );
                     break;
