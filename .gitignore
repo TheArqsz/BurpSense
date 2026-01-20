@@ -2,6 +2,7 @@ target/
 build/
 **/node_modules/
 out/
+dist/
 *.jar
 *.vsix
 
