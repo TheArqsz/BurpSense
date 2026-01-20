@@ -2,11 +2,13 @@ package com.arqsz.burpsense.util;
 
 import java.util.Base64;
 import java.util.Objects;
+import java.util.Optional;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import burp.api.montoya.scanner.audit.issues.AuditIssue;
+import burp.api.montoya.scanner.audit.issues.AuditIssueDefinition;
 
 /**
  * Utility for converting Burp Suite AuditIssue objects to JSON format.
@@ -32,9 +34,9 @@ public class IssueJsonMapper {
         json.addProperty("detail", Objects.toString(issue.detail(), ""));
         json.addProperty("remediation", Objects.toString(issue.remediation(), ""));
 
-        if (issue.definition() != null && issue.definition().background() != null) {
-            json.addProperty("background", issue.definition().background());
-        }
+        Optional.ofNullable(issue.definition())
+                .map(AuditIssueDefinition::background)
+                .ifPresent(bg -> json.addProperty("background", bg));
 
         JsonObject service = new JsonObject();
         service.addProperty("host", issue.httpService().host());
