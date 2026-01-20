@@ -1,4 +1,4 @@
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtml from 'sanitize-html';
 import * as vscode from 'vscode';
 import { BurpIssue } from '../types';
 
@@ -356,17 +356,21 @@ export class AdvisoryPanel {
             return '';
         }
 
-        const clean = DOMPurify.sanitize(html, {
-            ALLOWED_TAGS: [
+        const clean = sanitizeHtml(html, {
+            allowedTags: [
                 'p', 'br', 'strong', 'b', 'em', 'i', 'u',
                 'code', 'pre', 'ul', 'ol', 'li', 'blockquote',
                 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
                 'a', 'span', 'div'
             ],
-            ALLOWED_ATTR: ['href', 'class'],
-            ALLOWED_URI_REGEXP: /^https?:\/\//i,
-            KEEP_CONTENT: true,
-            RETURN_TRUSTED_TYPE: false
+            allowedAttributes: {
+                'a': ['href'],
+                '*': ['class']
+            },
+            allowedSchemes: ['http', 'https'],
+            allowedSchemesByTag: {
+                'a': ['http', 'https']
+            }
         });
 
         return clean;
