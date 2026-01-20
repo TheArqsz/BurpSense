@@ -1,3 +1,15 @@
+## [1.0.4](https://github.com/TheArqsz/BurpSense/compare/v1.0.3...v1.0.4) (2026-01-20)
+
+
+### Bug Fixes
+
+* **advisoryPanel:** switched from dompurify to sanitize-html ([c6a11a8](https://github.com/TheArqsz/BurpSense/commit/c6a11a8c77e36523f6e05639eefc29b3748884cb))
+* **mapping:** harden path normalization against traversal escapes ([5f65b10](https://github.com/TheArqsz/BurpSense/commit/5f65b106d5704a4c8957dcfe477d067f62c5d232))
+* **ui:** ensure bridge error dialogs run on EDT ([0f4dbe1](https://github.com/TheArqsz/BurpSense/commit/0f4dbe152cba6130a74bd2e5409c563e7dd04344))
+* **ui:** use hex nonces to resolve CSP ([c40ac03](https://github.com/TheArqsz/BurpSense/commit/c40ac03db15fff31ac09054ce7f3fbd0860fbd6e))
+* **workflow:** updated release workflow ([d4df793](https://github.com/TheArqsz/BurpSense/commit/d4df7932f7fc3d56f433fbbd85e84faf84f8f7ef))
+* **workflow:** updated release workflow ([af43ba0](https://github.com/TheArqsz/BurpSense/commit/af43ba03a2e738eaa468b38c34c64204dc7195d4))
+
 ## [1.0.3](https://github.com/TheArqsz/BurpSense/compare/v1.0.2...v1.0.3) (2026-01-19)
 
 
