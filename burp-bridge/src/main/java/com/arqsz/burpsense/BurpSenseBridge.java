@@ -5,6 +5,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 
 import com.arqsz.burpsense.api.BridgeServer;
 import com.arqsz.burpsense.config.BridgeSettings;
@@ -80,14 +81,12 @@ public class BurpSenseBridge implements BurpExtension {
             startMonitoring();
         } catch (Exception e) {
             api.logging().logToError("Bridge Start Failed: " + e.getMessage());
-            JOptionPane.showMessageDialog(
+            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                     api.userInterface().swingUtils().suiteFrame(),
-                    String.format(
-                            "Could not start server on port %d.\nError: %s",
-                            settings.getPort(),
-                            e.getMessage()),
+                    String.format("Could not start server on port %d.\nError: %s",
+                            settings.getPort(), e.getMessage()),
                     "Bridge Error",
-                    JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.ERROR_MESSAGE));
         }
     }
 
