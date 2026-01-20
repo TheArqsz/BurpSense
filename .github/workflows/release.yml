@@ -71,7 +71,7 @@ jobs:
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         run: |
           cd vscode-extension
-          npm install typescript
+          npm ci
           npm run compile
           
       - name: Verify Compilation Output
@@ -90,7 +90,7 @@ jobs:
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         run: |
           cd vscode-extension
-          vsce package --no-dependencies
+          vsce package
           
       - name: Verify VSIX Build
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
