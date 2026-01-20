@@ -1,6 +1,8 @@
+import * as crypto from 'crypto';
 import sanitizeHtml from 'sanitize-html';
 import * as vscode from 'vscode';
 import { BurpIssue } from '../types';
+
 
 /**
  * Webview panel for displaying issue details.
@@ -87,12 +89,21 @@ export class AdvisoryPanel {
         const request = this.decodeBase64(issue.request, "No request data available.");
         const response = this.decodeBase64(issue.response, "No response data available.");
 
+        const nonce = this.getNonce();
+        const csp = [
+            "default-src 'none'",
+            "style-src 'unsafe-inline'",
+            `script-src 'nonce-${nonce}'`,
+            "img-src 'self' data: https:",
+            "connect-src 'none'"
+        ].join('; ');
+
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
+    <meta http-equiv="Content-Security-Policy" content="${csp}">
     <title>Advisory: ${this.escapeHtml(issue.name)}</title>
     <style>
         * {
@@ -268,40 +279,28 @@ export class AdvisoryPanel {
         <pre><code>${this.escapeHtml(response)}</code></pre>
     </div>
     
-    <script>
+    <script nonce="${nonce}">
         (function() {
             const vscode = acquireVsCodeApi();
             let state = vscode.getState() || { scrollPos: 0, activeTab: 'details' };
             
-            function initializeTabs() {
-                const tabs = document.querySelectorAll('.tab');
-                const contents = document.querySelectorAll('.tab-content');
-                
-                tabs.forEach(tab => {
-                    tab.addEventListener('click', () => {
-                        const targetTab = tab.dataset.tab;
-                        
-                        tabs.forEach(t => t.classList.remove('active'));
-                        contents.forEach(c => c.classList.remove('active'));
-                        
-                        tab.classList.add('active');
-                        document.getElementById(targetTab).classList.add('active');
-                        
-                        state.activeTab = targetTab;
-                        vscode.setState(state);
-                    });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetTab = tab.dataset.tab;
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById(targetTab).classList.add('active');
+                    state.activeTab = targetTab;
+                    vscode.setState(state);
                 });
-            }
-            
-            initializeTabs();
+            });
             
             window.scrollTo(0, state.scrollPos);
-            
             if (state.activeTab !== 'details') {
                 const activeTab = document.querySelector(\`[data-tab="\${state.activeTab}"]\`);
                 if (activeTab) activeTab.click();
             }
-            
             window.addEventListener('scroll', () => {
                 state.scrollPos = window.scrollY;
                 vscode.setState(state);
@@ -310,6 +309,13 @@ export class AdvisoryPanel {
     </script>
 </body>
 </html>`;
+    }
+
+    /**
+     * Generates a random nonce.
+     */
+    private getNonce(): string {
+        return crypto.randomBytes(16).toString('hex');
     }
 
     /**
