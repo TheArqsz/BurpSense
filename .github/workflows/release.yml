@@ -77,7 +77,7 @@ jobs:
       - name: Verify Compilation Output
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         run: |
-          if [ ! -f "vscode-extension/out/extension.js" ]; then
+          if [ ! -f "vscode-extension/dist/extension.js" ]; then
             echo "Error: extension.js not found after compilation"
             exit 1
           fi
