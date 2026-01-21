@@ -1,302 +1,183 @@
 <h1 align="center">BurpSense</h1>
 <div align="center">
-  
-[![Build and Publish Release](https://github.com/TheArqsz/BurpSense/actions/workflows/release.yml/badge.svg)](https://github.com/TheArqsz/BurpSense/actions/workflows/release.yml)
-
-[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/arqsz.burpsense?include_prereleases&style=flat-square&label=Visual%20Studio%20Marketplace&color=blue)](https://marketplace.visualstudio.com/items?itemName=arqsz.burpsense)
-[![Open VSX Version](https://img.shields.io/open-vsx/v/arqsz/burpsense?style=flat-square&label=Open%20VSX%20Marketplace)](https://open-vsx.org/extension/arqsz/burpsense)
-
+Burp Suite Integration for VS Code
 </div>
 
-BurpSense bridges the gap between security testing in Burp Suite and your development environment in VS Code. The core idea is simple: instead of constantly switching between tools to cross-reference vulnerabilities with source code, you can map Burp's findings directly to the lines where issues occur. This gives you inline diagnostics, full advisory details and a persistent record of what needs attention.
+---
 
-![alt text](assets/main_view.png)
+Bridge the gap between security testing in Burp Suite and your development environment. Map Burp findings directly to source code lines with inline diagnostics, full advisories, and persistent annotations.
 
-## What this solves?
+![BurpSense Main View](https://raw.githubusercontent.com/TheArqsz/BurpSense/main/assets/main_view.png)
 
-If you've done web application security testing, you've probably experienced the friction of correlating Burp Suite findings with actual source code. You find an SQL injection, note the URL and parameter, then hunt through your codebase to figure out where that endpoint lives. Then you need to remember which file and line to fix, or worse, communicate this to someone else on your team who wasn't sitting next to you during testing.
+## Features
 
-Burp Suite does have a built-in API integration feature, but if you've tried using it, you know it's... let's say "minimalist".
+### **Live Issue Browser**
 
-![Burp API](assets/burp_off_api.png)
+Browse Burp Suite scan results directly in VS Code. Issues are organized by severity with lazy loading for responsive performance even with hundreds of findings.
 
-The extension eliminates most of this friction. The Burp bridge exposes scan results through a clean local API and the VS Code extension consumes them in real-time. You get a live view of all findings and you can annotate specific lines of code with issues. These annotations persist in your workspace, so you can pick up where you left off without losing context.
+### **Code Mapping**
 
-## How it works?
+Map security issues to specific lines of code. Right-click any line and select "Map Burp Issue to this Line" to create persistent annotations.
 
-The project has two components:
+![Context Menu](https://raw.githubusercontent.com/TheArqsz/BurpSense/main/assets/context_menu.png)
 
-The **Burp bridge** is a Java extension that runs inside Burp Suite. It starts an HTTP server on `localhost` (default port `1337`) and exposes your scan results through a REST API. It also maintains WebSocket connections to push updates when new issues appear or existing ones get removed. The bridge applies your filters (severity, confidence, scope) server-side, so only relevant issues get sent to clients.
+### **Smart Suggestions**
 
-The **VS Code extension** connects to this bridge and displays issues in a dedicated tree view. You can browse, search, and filter findings, then map them to specific lines in your source files. Mapped issues appear as diagnostics in the Problems panel, and clicking on one opens a detailed advisory with full HTTP request/response data. When you refactor code and lines move around, the extension attempts to track those changes and adjust mappings automatically.
+The extension analyzes code context and suggests relevant issues. SQL keywords? Get SQL injection issues first. File operations? See path traversal findings prioritized.
 
-Communication happens over HTTP for queries and WebSocket for real-time updates. The protocol is differential - after the initial sync, the bridge only sends what's changed (new issues, removed issues) rather than the entire dataset each time.
+### **Problems Integration**
 
-## Installation and setup
+Mapped issues appear as diagnostics in VS Code's Problems panel with appropriate severity indicators. Click any diagnostic to view full details.
 
-### Bridge extension (Burp Suite side)
+![Problems Tab](https://raw.githubusercontent.com/TheArqsz/BurpSense/main/assets/problems_tab.png)
 
-![the Bridge](assets/bridge.png)
+### **Detailed Advisories**
 
-Start by building the bridge:
+View complete issue details including description, remediation advice and full HTTP request/response data.
 
-```bash
-cd burp-bridge
-mvn clean package
-```
+![Advisory Panel](https://raw.githubusercontent.com/TheArqsz/BurpSense/main/assets/advisory.png)
 
-This produces `target/burpsense-bridge-*.jar`. Load it in Burp Suite through the Extensions tab (click "Add" and select the JAR). After loading, you'll see a new "BurpSense Bridge Settings" tab appear.
+### **Drift Detection**
 
-Generate an API token using the "Generate New Key" button and copy it somewhere safe. Then click "Start Server" to begin listening. By default, the server binds to `127.0.0.1:1337`, but you can change this in the settings panel if needed.
+When you refactor code, BurpSense automatically tracks line movements and adjusts mappings. No manual updates needed for typical code reorganization.
 
-> The bridge requires Burp Suite with the new Montoya API support.
+![Drift Detection](https://raw.githubusercontent.com/TheArqsz/BurpSense/main/assets/drift.png)
 
-### VS Code extension
+### **Real-time Sync**
 
-You can install from [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=arqsz.burpsense), [Open VSX Registry](https://open-vsx.org/extension/arqsz/burpsense), a packaged VSIX or run from source:
+WebSocket-based live updates keep your issue list current as Burp discovers new vulnerabilities. Differential sync minimizes network overhead.
 
-**From VSIX:**
+### **Powerful Filtering**
 
-```bash
-cd vscode-extension
-npm install
-npm run compile
-npx vsce package
-```
+- Search by issue name, URL or ID
+- Filter by minimum severity (High/Medium/Low/Information)
+- Filter by confidence level (Certain/Firm/Tentative)
+- Show only in-scope issues
+- Quick filter presets for common scenarios
 
-This creates `burpsense-*.vsix`. In VS Code, go to the Extensions view (`Ctrl+Shift+X`), click the "..." menu, and select "Install from VSIX".
+### **Team Collaboration**
 
-**From source (for development):**
+Mappings are stored in `.burpsense/mappings.json` and can be committed to version control. Share security findings with your entire team.
 
-```bash
-cd vscode-extension
-npm install
-npm run compile
-```
+## Requirements
 
-Then press `F5` in VS Code to launch the Extension Development Host with the extension loaded and debugger attached.
+**Before using this extension, you need:**
 
-### Connecting the two
+1. **Burp Suite** with Montoya API support (2025.12 or later)
+2. **BurpSense Bridge** - A Burp extension that exposes scan results via REST API
+   - Download from [GitHub Releases](https://github.com/TheArqsz/BurpSense/releases)
+   - Or build from source (requires Java 21)
 
-After installing both components, run `BurpSense: Set API Token` from the command palette in VS Code and paste the token you generated in Burp. If everything is working, you should see `BurpSense: Connected [X issues]` in the status bar at the bottom of your editor. If it says "Disconnected", click the status bar for troubleshooting options.
+## Quick Start
 
-## Using the extension
+### 1. Install the Bridge in Burp Suite
 
-### Browsing issues
+1. Download `burpsense-bridge-*.jar` from [releases](https://github.com/TheArqsz/BurpSense/releases)
+2. In Burp Suite, go to **Extensions** > **Add**
+3. Select the downloaded JAR file
+4. Navigate to the **BurpSense Bridge Settings** tab
 
-The BurpSense view appears in the activity bar (the shield icon on the left side). Opening it shows a tree of issues organized by severity. Each issue displays its name, confidence level, and affected URL. The tree uses lazy loading, so it stays responsive even when you have hundreds of findings.
+![Bridge Settings](https://raw.githubusercontent.com/TheArqsz/BurpSense/main/assets/bridge.png)
 
-You can filter issues in several ways:
+### 2. Start the Bridge Server
 
-- Text search (searches names, URLs and issue IDs)
-- Minimum severity (high, medium, low, information)
-- Minimum confidence (certain, firm, tentative)
-- Scope filter (show only in-scope issues)
+1. In the Bridge Settings tab, click **"Generate New Key"**
+2. Copy the API token
+3. Click **"Start Server"** (default: `127.0.0.1:1337`)
 
-The toolbar icons let you adjust these filters on the fly. There's also a "quick filter" menu that applies common presets like "high severity only" or "in-scope high and medium".
+### 3. Connect VS Code
 
-### Mapping issues to code
+1. Open Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P`)
+2. Run `BurpSense: Set API Token`
+3. Paste the token from step 2
 
-To map an issue to a line of code:
+Check the status bar at the bottom - you should see `BurpSense: Connected [X issues]`
 
-1. Open the file and position your cursor on the relevant line
-2. Right-click and select `BurpSense: Map Burp Issue to this Line`
+### 4. Start Mapping
 
-![context menu](assets/context_menu.png)
+1. Open any source file
+2. Position cursor on a vulnerable line
+3. Right-click > `BurpSense: Map Burp Issue to this Line`
+4. Select the relevant issue from the dropdown
 
-3. Choose the issue from the dropdown
+The issue now appears in the Problems panel and has a squiggly underline in the editor!
 
-![select issues](assets/issue_select.png)
+## Extension Settings
 
-The mapping gets saved to `.burpsense/mappings.json` in your workspace. This file can be committed to version control so team members see the same annotations.
-
-Mapped issues appear in two places: the Problems panel (with appropriate severity icons) and directly in the editor as squiggly underlines. Click any diagnostic to open a detailed advisory showing the full issue description, remediation advice, and HTTP traffic if available.
-
-![Problems tab](assets/problems_tab.png)
-
-![advisory](assets/advisory.png)
-
-### Drift detection
-
-![Drift](assets/drift.png)
-
-When you refactor code, lines move around. BurpSense tries to keep mappings accurate by checking whether the text you originally mapped still exists nearby. When you edit a file with mappings, the extension:
-
-1. Checks if the exact text still appears on the mapped line
-2. If not, searches within +/- 20 lines for similar content (>80% match)
-3. Calculates similarity using character-level comparison with position weighting
-4. Updates the line number if it finds a good match
-
-This works well for typical refactoring like adding functions or moving code blocks. It won't track cases where you completely rewrite the vulnerable code, but that's intentional - if the code changed that much, the original issue may no longer apply and you should verify it manually.
-
-The extension can notify you when it adjusts mappings, though you can disable these notifications in settings if they're distracting.
-
-### Removing mappings
-
-Remove a single mapping by right-clicking the line and selecting `BurpSense: Remove Mapping from this Line`. To remove all mappings for a particular issue, hover over it in the tree view and click the trashbin icon. For bulk removal, use `BurpSense: Remove multiple Mappings` from the command palette.
-
-### Sharing mappings with your team
-
-The mappings file (`.burpsense/mappings.json`) is workspace-specific and can be committed to your repository. This means when a teammate clones the project and connects their own VS Code to a shared Burp Project, they'll see the same annotations you created. They'll need their own bridge API token, but the mappings themselves are just file paths and line numbers with issue IDs.
-
-You can also export mappings to a standalone JSON file and import them in a different workspace if needed with dedicated commands.
-
-## Configuration
-
-Settings live in VS Code preferences under the "BurpSense" section:
-
-```json
-{
-  "burpsense.bridgeIp": "127.0.0.1",
-  "burpsense.bridgePort": 1337,
-  "burpsense.inScopeOnly": true,
-  "burpsense.minSeverity": "INFORMATION",
-  "burpsense.minConfidence": "TENTATIVE",
-  "burpsense.showDriftNotifications": true,
-  "burpsense.confirmMappingDeletion": true,
-  "burpsense.autoCleanOrphanedMappings": false
-}
-```
-
-The IP and port should match where your bridge is listening. If you're running Burp on a different machine, adjust accordingly. The extension will reconnect automatically when these settings change.
-
-Filter settings (severity, confidence, scope) apply server-side, which means the bridge only sends issues matching your criteria. Changing filters triggers a refetch, so there might be a brief delay while the new filtered set loads.
-
-Drift notifications can be disabled if you find them noisy. The extension will still adjust mappings, just without notifying you.
-
-Auto-clean orphaned mappings, when enabled, removes mappings for files that get deleted. This is disabled by default because you might temporarily remove files during refactoring and want the mappings to persist.
-
-## Technical details
-
-### Synchronization protocol
-
-The extension uses a hybrid push/pull model. On initial load, it fetches all issues via `GET /issues`. Subsequent requests to `POST /issues` include the IDs of issues the client already knows about, and the bridge responds with:
-
-```json
-{
-  "newIssues": [...],
-  "removedIds": [...]
-}
-```
-
-This differential sync significantly reduces network traffic during active scanning sessions where issues frequently appear and disappear.
-
-WebSocket connections handle real-time updates. The bridge monitors its issue list every 2 seconds and broadcasts a refresh message when the count changes. Clients respond by fetching an incremental update.
-
-### Caching strategy
-
-Issues are cached locally with a 30 second TTL. After expiration, the tree view fetches fresh data the next time you expand a node. This avoids hammering the bridge with requests while keeping the display reasonably current.
-
-The cache has two levels:
-
-- Issue-level cache (raw scan data)
-- Grouped data cache (tree nodes organized by severity/name)
-
-When an incremental update arrives, both caches are invalidated, but the tree doesn't refetch unless something actually changed. This keeps the UI responsive even during heavy scanning activity.
-
-### Performance characteristics
-
-The initial load with several hundred issues can take a few seconds while the tree builds its internal structure. After that, navigation is fast because the tree uses lazy loading - child nodes aren't created until you expand their parent.
-
-The extension processes incremental updates synchronously, which means if you have a large removal event (like changing filters to exclude 500 issues), there might be a noticeable pause. This is a trade-off for keeping the sync logic simple.
-
-## Known quirks and limitations
-
-### Manual disconnect behavior
-
-If you manually disconnect using the status bar, the extension won't fetch data for any operation, including opening issue details. This is intentional - when you're disconnected, you're working with stale cache only. Reconnecting re-enables all fetches.
-
-### Cache invalidation timing
-
-When the cache expires (after 30 seconds), the extension doesn't immediately refetch. It waits until you next interact with the tree view. This is by design to avoid background fetches when you're not actively looking at the extension.
-
-### Large issue sets
-
-With 1000+ issues, the tree can feel sluggish. This is partly because VS Code's tree view API isn't optimized for that many items, and partly because the grouping logic has to sort and organize everything. Consider using stricter filters to reduce the working set.
-
-### WebSocket reconnection gap
-
-If the Burp bridge restarts, the WebSocket takes a few seconds to reconnect. During this window, you won't receive real-time updates, though the extension continues working with cached data. Once the connection re-establishes, you'll get an incremental sync of anything that changed.
-
-### Mapping file format
-
-The mappings file is plain JSON and gets rewritten entirely on every change. This means if two people edit mappings simultaneously, the last write wins. Git can handle this in most cases, but be aware that mappings don't merge intelligently across branches.
+Access via File > Preferences > Settings > BurpSense:
+
+- `burpsense.bridgeIp`: Bridge server IP address (default: `127.0.0.1`)
+- `burpsense.bridgePort`: Bridge server port (default: `1337`)
+- `burpsense.inScopeOnly`: Show only in-scope issues (default: `true`)
+- `burpsense.minSeverity`: Minimum severity filter (default: `INFORMATION`)
+- `burpsense.minConfidence`: Minimum confidence filter (default: `TENTATIVE`)
+- `burpsense.showDriftNotifications`: Notify when mappings auto-adjust (default: `true`)
+- `burpsense.confirmMappingDeletion`: Confirm before removing mappings (default: `true`)
+- `burpsense.autoCleanOrphanedMappings`: Auto-remove mappings when files deleted (default: `false`)
+- `burpsense.logLevel`: Logging verbosity (default: `info`)
+
+## Commands
+
+Access via Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P`):
+
+**Connection:**
+- `BurpSense: Set API Token` - Configure bridge authentication
+- `BurpSense: Connect to Bridge` - Manually connect
+- `BurpSense: Disconnect from Bridge` - Manually disconnect
+- `BurpSense: Check Connection` - Test bridge connectivity
+
+**Mapping:**
+- `BurpSense: Map Burp Issue to this Line` - Create mapping at cursor
+- `BurpSense: Remove Mapping from this Line` - Delete mapping at cursor
+- `BurpSense: Remove multiple Mappings` - Bulk mapping removal
+- `BurpSense: Export Mappings` - Save to external JSON file
+- `BurpSense: Import Mappings` - Load from external JSON file
+
+**Viewing:**
+- `BurpSense: Refresh Issues` - Force refresh from bridge
+- `BurpSense: Search Issues` - Text search across all issues
+- `BurpSense: Quick Filter Preset` - Apply common filter combinations
+- `BurpSense: Show Logs` - Open output panel for troubleshooting
 
 ## Troubleshooting
 
-### Status bar shows "Not Connected"
+### "Not Connected" in status bar
 
-Work through these in order:
+1. Verify Burp Suite is running
+2. Check bridge extension is loaded in Burp (Extensions tab)
+3. Ensure server is started (Bridge Settings tab)
+4. Verify API token matches
+5. Check for port conflicts (default is `1337`)
 
-1. Is Burp Suite running?
-2. Is the bridge extension loaded? (Check Extensions tab in Burp)
-3. Is the server started? (Check Bridge Settings tab)
-4. Does your API token match between Burp and VS Code?
-5. Is something blocking set port? (Firewall, another service)
+Click the status bar for quick diagnostics and troubleshooting options.
 
-The status bar is clickable and opens a quick actions menu with diagnostics. Check the VS Code output panel for connection logs.
+### Issues not showing
 
-### Issues aren't showing up
+- Verify issues exist in Burp's Target > Site map
+- Check filter settings (severity, confidence, scope)
+- Try refreshing (toolbar refresh button)
+- Check Output panel: `BurpSense: Show Logs`
 
-First, verify the issues actually exist in Burp's sitemap. Then check your filter settings - you might have the minimum severity set too high, or scope filtering enabled when the issues aren't in scope. Try clicking the refresh button in the tree view toolbar. If that doesn't work, check the output panel for errors.
+### Mappings not appearing
 
-### Mappings not appearing as diagnostics
+- Ensure file paths are relative to workspace root
+- Check `.burpsense/mappings.json` for correct paths
+- Verify workspace is opened correctly (not just loose files)
 
-Make sure the file path in the mappings matches your workspace structure exactly. The extension uses paths relative to the workspace root, so if your workspace root isn't what you expect, mappings might not resolve. Check `.burpsense/mappings.json` to see what paths are stored, and verify they match your actual file locations.
+## Security & Privacy
 
-### Drift detection moving mappings incorrectly
+- All communication should happen over localhost (127.0.0.1)
+- API tokens are stored in VS Code's secure secret storage
+- No data is sent to external servers
+- Mappings contain only file paths, line numbers, and issue IDs
 
-The similarity algorithm is conservative (80% match threshold), but false positives can still happen if you have very similar code repeated in nearby lines. If drift detection is causing problems, you can turn off notifications in settings. The extension will still adjust mappings, but you can check the Problems panel to verify they're still pointing to the right code.
+## More Information
 
-## Development and contributing
-
-To build from source, you need Maven for the bridge and Node.js for the extension.
-
-### Bridge
-
-```bash
-cd burp-bridge
-mvn clean package
-```
-
-Output is in `target/burpsense-bridge-*.jar`. Load this in Burp's Extensions tab.
-
-### Extension
-
-```bash
-cd vscode-extension
-npm install
-npm run compile
-```
-
-For active development, use `npm run watch` to recompile automatically when you change files. Press F5 in VS Code to launch the Extension Development Host with debugger attached.
-
-Issues and pull requests are welcome. For major changes, please open an issue first to discuss the approach. When reporting bugs, include VS Code and Burp Suite versions, extension version, and logs from both components (VS Code output panel and Burp's extension output tab).
-
-## Project structure
-
-```
-burpsense/
-├── burp-bridge/
-│   └── src/main/java/com/arqsz/burpsense/
-│       ├── api/              # HTTP endpoints and handlers
-│       ├── service/          # Issue filtering and management
-│       ├── config/           # Settings persistence
-│       └── ui/               # Bridge settings panel
-│
-└── vscode-extension/
-    └── src/
-        ├── commands/         # Command palette handlers
-        ├── providers/        # Tree view, diagnostics, code actions
-        ├── services/         # Connection, caching, mapping
-        ├── ui/               # Webview panels for advisories
-        └── extension.ts      # Entry point and activation
-```
+- [GitHub Repository](https://github.com/TheArqsz/BurpSense)
+- [Full Documentation](https://github.com/TheArqsz/BurpSense#readme)
+- [Report Issues](https://github.com/TheArqsz/BurpSense/issues)
+- [Changelog](https://github.com/TheArqsz/BurpSense/blob/main/CHANGELOG.md)
 
 ## License
 
-[MIT](LICENSE.md)
-
-## Acknowledgments
-
-Built using Burp Suite's Montoya API, Undertow for HTTP/WebSocket serving and node-fetch/ws for client networking.
+MIT - See [LICENSE](https://github.com/TheArqsz/BurpSense/blob/main/LICENSE.md)
