@@ -1,3 +1,15 @@
+## [1.1.0](https://github.com/TheArqsz/BurpSense/compare/v1.0.4...v1.1.0) (2026-01-22)
+
+
+### Features
+
+* **connection:** added auto connect at startup setting ([ce3e15e](https://github.com/TheArqsz/BurpSense/commit/ce3e15ebe7282a4c15bac5f40016229ca33fde9a))
+
+
+### Bug Fixes
+
+* **activation:** remove automatic connection attempt on startup ([889e6ae](https://github.com/TheArqsz/BurpSense/commit/889e6aec5e5cc293e812fda36de1907de34b6180))
+
 ## [1.0.4](https://github.com/TheArqsz/BurpSense/compare/v1.0.3...v1.0.4) (2026-01-20)
 
 
