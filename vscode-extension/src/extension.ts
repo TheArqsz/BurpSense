@@ -60,7 +60,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     });
     issueTreeProvider.setTreeView(treeView);
 
-    await connectionManager.checkConnection();
+    const config = vscode.workspace.getConfiguration();
+    const autoConnect = config.get<boolean>(CONFIG_KEYS.AUTO_CONNECT, false);
+
+    if (autoConnect) {
+        Logger.info('Auto-connect enabled, attempting connection...', 'Lifecycle');
+        await connectionManager.checkConnection();
+    } else {
+        Logger.info('Auto-connect disabled, showing disconnected status', 'Lifecycle');
+        connectionManager.disconnect(true);
+    }
 
     const connectionCommands = new ConnectionCommands(context, connectionManager);
     const mappingCommands = new MappingCommands(

@@ -248,7 +248,7 @@ export class ConnectionManager {
 
         this.ws.on('close', () => {
             this.ws = undefined;
-            setTimeout(() => this.checkConnection(), CONNECTION.WS_RECONNECT_DELAY_MS);
+            setTimeout(() => this.checkConnection(true), CONNECTION.WS_RECONNECT_DELAY_MS);
         });
     }
 
@@ -256,8 +256,10 @@ export class ConnectionManager {
      * Tests connection to bridge and fetches issue count.
      * Updates status bar and triggers callback if connected.
      * Implements circuit breaker pattern.
+     *
+     * @param silent - If true, suppresses error notifications.
      */
-    public async checkConnection(): Promise<void> {
+    public async checkConnection(silent: boolean = false): Promise<void> {
         if (this.circuitBreakerOpen) {
             const now = Date.now();
             const timeSinceLastFailure = now - (this.lastFailureTime || 0);
@@ -276,7 +278,9 @@ export class ConnectionManager {
 
         if (!token) {
             this.openCircuitBreaker();
-            this.showNoTokenError();
+            if (!silent) {
+                this.showNoTokenError();
+            }
             return;
         }
 
@@ -327,19 +331,25 @@ export class ConnectionManager {
             } else if (response.status === 401) {
                 this.updateStatus(false);
                 this.openCircuitBreaker();
-                this.showAuthError();
+                if (!silent) {
+                    this.showAuthError();
+                }
                 this.eventEmitter.emitDisconnected('authentication_failed');
             } else {
                 this.updateStatus(false);
                 this.handleFailedConnection();
-                this.showServerError(response.status);
+                if (!silent) {
+                    this.showServerError(response.status);
+                }
                 this.eventEmitter.emitDisconnected(`server_error_${response.status}`);
 
             }
         } catch (error: any) {
             this.updateStatus(false);
             this.handleFailedConnection();
-            this.handleConnectionError(error);
+            if (!silent) {
+                this.handleConnectionError(error);
+            }
             this.eventEmitter.emitConnectionError(
                 error instanceof Error ? error : new Error(String(error))
             );
@@ -375,9 +385,11 @@ export class ConnectionManager {
 
     /**
      * Manually disconnects from bridge.
-     * Stops polling and sets manual disconnect flag.
+     * Stops polling and sets manual disconnect flag. 
+     * 
+     * @param silent - If true, suppresses notifications.
      */
-    public disconnect(): void {
+    public disconnect(silent: boolean = false): void {
         if (this._manuallyDisconnected) {
             Logger.info('Already disconnected', 'Connection');
             return;
@@ -392,9 +404,11 @@ export class ConnectionManager {
 
         Logger.info('User manually disconnected', 'Connection');
 
-        vscode.window.showInformationMessage(
-            'Disconnected from BurpSense Bridge. Click status bar to reconnect.'
-        );
+        if (!silent) {
+            vscode.window.showInformationMessage(
+                'Disconnected from BurpSense Bridge. Click status bar to reconnect.'
+            );
+        }
     }
 
     /**
@@ -742,7 +756,7 @@ export class ConnectionManager {
             }
 
             try {
-                await this.checkConnection();
+                await this.checkConnection(false);
             } catch (error) {
                 Logger.error('Error during polling check', error, 'Connection');
             } finally {
