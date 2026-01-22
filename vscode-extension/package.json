@@ -80,6 +80,11 @@
           ],
           "default": "info",
           "description": "Logging verbosity level. 'error' shows only critical issues, 'debug' shows everything."
+        },
+        "burpsense.autoConnect": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically connect to BurpSense Bridge when VS Code starts"
         }
       }
     },

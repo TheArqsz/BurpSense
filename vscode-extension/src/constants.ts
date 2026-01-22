@@ -41,6 +41,7 @@ export const COMMANDS = {
 export const CONFIG_KEYS = {
     BRIDGE_IP: `${CONFIG_SECTION}.bridgeIp`,
     BRIDGE_PORT: `${CONFIG_SECTION}.bridgePort`,
+    AUTO_CONNECT: `${CONFIG_SECTION}.autoConnect`,
     IN_SCOPE_ONLY: `${CONFIG_SECTION}.inScopeOnly`,
     MIN_SEVERITY: `${CONFIG_SECTION}.minSeverity`,
     MIN_CONFIDENCE: `${CONFIG_SECTION}.minConfidence`,
